@@ -1,6 +1,7 @@
 # Data mining project 2021 - assignment 1
 #testing the Kraken
 test = Kraken
+test ok for us, pulled succesfully!
 
 
 # read the data ---Alice
