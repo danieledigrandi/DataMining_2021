@@ -1,5 +1,6 @@
 from Utils import compute_best_split
 
+
 class Node:
     """Class created to define a Node object, it belongs to a Tree and it can be: root, leaf or an intermediate Node.
     When the Tree is growing, new nodes are generated and recursively classified.
@@ -42,14 +43,25 @@ class Node:
         Then, if one of the child nodes classifies as a leaf, it generates a leaf Node.
         Otherwise, it generates a normal Node.
 
-        :param data_x: array of data attributes passed without the classification labels.
+        :param data_x: array of data attributes and values passed without the classification labels.
         :param data_y: array of classifications in the same order of data_x.
         :param nmin: minimum number of observations (elements) in order to create a Node.
         :param minleaf: minimum number of observations (elements) in order to create a leaf.
         :param nfeat: number of attributes that are used to get the best attribute for splitting the data.
         :return: None, it simply stores in its variables the created nodes and their connections.
         """
+
+        # use the compute_best_split function as it has been already implemented
+
+
+        """
+        At a certain point there will be something like:
+        for i in attributes:
+            new_split, impurity_1, impurity_2, len_1, len_2 = compute_best_split(data_x[:, i], data_y, minleaf)
+        """
+
         None
+
 
 
 
@@ -67,3 +79,4 @@ class Tree:
     def __init__(self):
         """Constructor for the class Tree that generates a root Node object."""
         self.root = Node(root=True)
+
