@@ -17,7 +17,7 @@ def compute_gini_index(array: []):
 
 # compute the best split
 
-def compute_best_split(x_data: [], y_data: [], minleaf: int):
+def compute_best_split(x_data: [[]], y_data: [], minleaf: int):
     """
     This function uses the gini-index to calculate the impurity reduction of a split, with the objective
     to understand if a split should be made on a Node.
@@ -30,7 +30,13 @@ def compute_best_split(x_data: [], y_data: [], minleaf: int):
     Basically, it specifies the minimum number of observations (elements) that have to be
     in each part of the split in order for a it to be considered valid.
     :return: value of the split, impurities for both parts of the split, and fraction of observations
-    that are gone in both splits.
+    that are gone in both splits and attributes on which we have split.
+    """
+
+    """
+    At a certain point there will be something like:
+    for i in attributes:
+        new_split, impurity_1, impurity_2, len_1, len_2 = compute_best_split(data_x[:, i], data_y, minleaf)
     """
 
     # in this function, use the compute_gini_index function to compute the

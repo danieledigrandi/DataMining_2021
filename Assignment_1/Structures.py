@@ -54,11 +54,7 @@ class Node:
         # use the compute_best_split function as it has been already implemented
 
 
-        """
-        At a certain point there will be something like:
-        for i in attributes:
-            new_split, impurity_1, impurity_2, len_1, len_2 = compute_best_split(data_x[:, i], data_y, minleaf)
-        """
+
 
         None
 
