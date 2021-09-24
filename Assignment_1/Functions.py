@@ -1,9 +1,11 @@
 # create tree_grow() (reference slide number 2 of the class. tree set number 2)
 
-    #---Alice
-    # if current node is not a leaf (impurity > 0(?)), generate all valid splits
+# ---Alice
 
-        # deal with nmin and minleaf
+# if current node is not a leaf (impurity > 0(?)), generate all valid splits
+
+
+# deal with nmin and minleaf
 
     # implement the gini-index
 

@@ -1,8 +1,9 @@
 # read the data ---Alice
 
+from Structures import Node, split
 
 
-def compute_gini_index(array: []):
+def compute_gini_index([good, bad]):
     """
     This function calculates the gini index on a new split,
     it takes the labels that are gone in the considered split and
@@ -12,8 +13,12 @@ def compute_gini_index(array: []):
     :param array: array of classifications.
     :return: the gini index of the split.
     """
+    prob_good = count(good)/(count(good)+count(bad))
+    prob_bad = count(bad)/(count(good)+count(bad))
 
-    None
+    gini = (prob_good*prob_bad)-((count(Node.left.bad)/count(good)+count(bad))+(count(Node.right.bad)/count(good)+count(bad))
+
+    return gini
 
 # compute the best split
 
@@ -42,4 +47,6 @@ def compute_best_split(x_data: [[]], y_data: [], minleaf: int):
     # in this function, use the compute_gini_index function to compute the
     # gini index (or impurity) of a split.
 
-    None
+    best_split = min(compute_gini_index())
+
+    return best_split
