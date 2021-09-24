@@ -1,6 +1,6 @@
 # read the data ---Alice
 
-from Structures import Node, split
+from Structures import Node, Node.split
 
 
 def compute_gini_index([good, bad]):
