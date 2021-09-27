@@ -1,9 +1,35 @@
 # read the data ---Alice
 
-from Structures import Node, Node.split
+import pandas as pd
+
+def read_data(file="credit"):
+    """
+    This function is used to open the data using a pandas Dataframe.
+    :param file: the file to open. Possible values: "credit", "pima", "eclipse-train", "eclipse-test".
+    :return: the opened data as a pandas Dataframe.
+    """
+
+    if file == "credit":
+        file = "./Assignment_1/data/credit.txt"
+        data = pd.read_csv(file)
+
+    elif file == "pima":
+        file = "./Assignment_1/data/pima.txt"
+        data = pd.read_csv(file)
+
+    elif file == "eclipse-train":
+        file = "./Assignment_1/data/promise-2_0a-packages-csv/eclipse-metrics-packages-2.0.csv"
+        data = pd.read_csv(file, sep=';')
+
+    elif file == "eclipse-test":
+        file = "./Assignment_1/data/promise-2_0a-packages-csv/eclipse-metrics-packages-3.0.csv"
+        data = pd.read_csv(file, sep=';')
+
+    return data
 
 
-def compute_gini_index([good, bad]):
+
+# def compute_gini_index():
     """
     This function calculates the gini index on a new split,
     it takes the labels that are gone in the considered split and
@@ -13,16 +39,17 @@ def compute_gini_index([good, bad]):
     :param array: array of classifications.
     :return: the gini index of the split.
     """
-    prob_good = count(good)/(count(good)+count(bad))
-    prob_bad = count(bad)/(count(good)+count(bad))
+    # prob_good = count(good)/(count(good)+count(bad))
+    # prob_bad = count(bad)/(count(good)+count(bad))
 
-    gini = (prob_good*prob_bad)-((count(Node.left.bad)/count(good)+count(bad))+(count(Node.right.bad)/count(good)+count(bad))
+    # gini = (prob_good*prob_bad)-((count(Node.left.bad)/count(good)+count(bad))+(count(Node.right.bad)/count(good)+count(bad))
 
-    return gini
+    # return gini
+
 
 # compute the best split
 
-def compute_best_split(x_data: [[]], y_data: [], minleaf: int):
+# def compute_best_split(x_data: [[]], y_data: [], minleaf: int):
     """
     This function uses the gini-index to calculate the impurity reduction of a split, with the objective
     to understand if a split should be made on a Node.
@@ -47,6 +74,6 @@ def compute_best_split(x_data: [[]], y_data: [], minleaf: int):
     # in this function, use the compute_gini_index function to compute the
     # gini index (or impurity) of a split.
 
-    best_split = min(compute_gini_index())
+    # best_split = min(compute_gini_index())
 
-    return best_split
+    # return best_split
