@@ -1,4 +1,4 @@
-from Utils import compute_best_split
+from Assignment_1.Utils import compute_best_split
 
 
 class Node:
@@ -34,7 +34,7 @@ class Node:
 
 
     # make a function to split the data
-    def split(self, data_x: [[]], data_y: [], nmin: int, minleaf: int, nfeat: int = None):
+    def split(self, data_x: [[]], data_y: [], nmin: int, minleaf: int, nfeat: int, attributes: dict):
         """
         This function made the Tree grows by splitting the data in input into 2 different groups.
         To do this, it iterates through nfeat attributes and calculate the best split of each.
@@ -48,10 +48,12 @@ class Node:
         :param nmin: minimum number of observations (elements) in order to create a Node.
         :param minleaf: minimum number of observations (elements) in order to create a leaf.
         :param nfeat: number of attributes that are used to get the best attribute for splitting the data.
+        :param attributes: a dictionary that specifies the attributes available to make a split.
+        Format: attributes = {0: "attribute_0", 1: "attribute_1", ...}.
         :return: None, it simply stores in its variables the created nodes and their connections.
         """
 
-        # use the compute_best_split function as it has been already implemented
+        # use the best_split_all_attributes function as it has been already implemented
 
 
 
@@ -75,4 +77,21 @@ class Tree:
     def __init__(self):
         """Constructor for the class Tree that generates a root Node object."""
         self.root = Node(root=True)
+
+
+    def grow(self, x: [[]], y: [], nmin: int, minleaf: int, nfeat: int, attributes: dict):
+        """
+        This function grows the tree using the x_train data together with their labels y_train.
+        How the tree grows: recursively, it calls the method split from the class Node.
+
+        :param x: array of data attributes and values passed without the classification labels.
+        :param y: array of classifications in the same order of x.
+        :param nmin: minimum number of observations (elements) in order to create a Node.
+        :param minleaf: minimum number of observations (elements) in order to create a leaf.
+        :param nfeat: number of attributes that are used to get the best attribute for splitting the data.
+        :param attributes: a dictionary that specifies the attributes available to make a split.
+        Format: attributes = {0: "attribute_0", 1: "attribute_1", ...}.
+        :return: Tree created using the training set.
+        """
+        self.root.split(x, y, nmin=nmin, minleaf=minleaf, nfeat=nfeat, attributes=attributes)
 
