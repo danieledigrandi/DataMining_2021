@@ -1,11 +1,11 @@
-# read the data ---Alice
-
 import pandas as pd
 import numpy as np
+
 
 def read_data(file):
     """
     This function is used to open the data using a pandas Dataframe.
+
     :param file: the file to open. Possible values: "credit", "pima", "eclipse-train", "eclipse-test".
     :return: the opened data as a pandas Dataframe.
     """
@@ -36,6 +36,13 @@ def read_data(file):
 
 
 def split_label(data, file):
+    """
+    This function will split the label column from the attributes columns of given data.
+
+    :param data: data that have to be split.
+    :param file: the file name. Possible values: "credit", "pima", "eclipse-train", "eclipse-test".
+    :return: data_x which is an array of attributes and data_y which are the corresponding labels.
+    """
 
     data_copy = data.copy(deep=True)
 
@@ -61,6 +68,15 @@ def split_label(data, file):
 
 
 def get_attributes_list(x_train, data_train):
+    """
+    This function encodes the attribute given in input in integer values, and makes
+    a dictionary to map this encoding.
+
+    :param x_train: array of attributes.
+    :param data_train: pandas dataframe of complete data.
+    :return: a dictionary that specifies the attributes of the given data.
+    Format: attributes = {0: "attribute_0", 1: "attribute_1", ...}.
+    """
 
     attributes = {}
     data_copy = data_train.copy(deep=True)
@@ -78,10 +94,6 @@ def get_attributes_list(x_train, data_train):
     return attributes
 
 
-
-
-
-
 def compute_gini_index(labels: []):
     """
     This function calculates the gini index on a new split,
@@ -96,16 +108,21 @@ def compute_gini_index(labels: []):
     total = len(labels)
     unique, counts = np.unique(labels, return_counts=True)
     count_0_and_1 = dict(zip(unique, counts))
+
     p_0 = count_0_and_1[0]/total
+
     gini_index = p_0 * (1 - p_0)
+
     return gini_index
 
 
 def best_split_one_attribute(data_x: [], data_y: [], minleaf: int):
     """
+    This function will compute, within the values of a given attribute, which is the best
+    one to perform a split.
 
-    :param x_data: all the values of the attribute given in input.
-    :param y_data: the labels of the attribute given in input.
+    :param data_x: all the values of the attribute given in input.
+    :param data_y: the labels of the attribute given in input.
     :param minleaf: minimum number of observations (elements) in order to create a leaf.
     :return: the value of the best split for this attribute, impurities for both children generated, and
     percentage of cases that are gone to the left child and to the right child.
@@ -118,6 +135,7 @@ def best_split_one_attribute(data_x: [], data_y: [], minleaf: int):
 
     sorted_values = np.sort(np.unique(data_x))
     len_sorted = len(sorted_values)
+    # generate all the values 'in between' the given values:
     possible_splits = (sorted[0:len_sorted - 1] + sorted[1:len_sorted]) / 2
     # Eg: if sorted = [1, 2, 4] --> possible_splits = [1.5, 3]
     sorted_indices = data_x.argsort()
@@ -137,7 +155,9 @@ def best_split_one_attribute(data_x: [], data_y: [], minleaf: int):
         impurity_right = compute_gini_index(right_data)
 
         children_impurity = impurity_left * percentage_left + impurity_right * percentage_right
+
         if children_impurity < lowest_impurity and len(left_data) >= minleaf and len(right_data) >= minleaf:
+            # store the new best values found by far:
             best_impurity_left = impurity_left
             best_impurity_right = impurity_right
             lowest_impurity = children_impurity
@@ -150,25 +170,25 @@ def best_split_one_attribute(data_x: [], data_y: [], minleaf: int):
 
 def best_split_all_attributes(data_x: [[]], data_y: [], minleaf: int, attributes: dict):
     """
-    This function uses the gini-index to calculate the impurity reduction of a split, with the objective
+    This function uses the gini-index to calculate the impurity of a split, with the objective
     to understand if a split should be made on a Node.
-    Basically, it finds the possible splits and returns the split with the greater impurity reduction,
-    together with other values.
+    Basically, for each attribute, it finds the best split and, among these, will
+    select and return the best one.
 
-    :param x_data: array of values of an attribute to perform a split.
-    :param y_data: array of classifications in the same order of data_x.
+    :param data_x: array of values of an attribute to perform a split.
+    :param data_y: array of classifications in the same order of data_x.
     :param minleaf: minimum number of observations (elements) in order to create a leaf.
     Basically, it specifies the minimum number of observations (elements) that have to be
     in each part of the split in order for a it to be considered valid.
-    :return: value of the split, impurities for both parts of the split, and fraction of observations
-    that are gone in both splits and attributes on which we have split.
+    :return: best attribute on which we have split, value of the best split
+    and impurities for both parts of the split.
     """
 
     lowest_impurity = 1
     best_impurity_left, best_impurity_right = 1, 1
 
+    # a split can be made only on attributes that have not yet been used!
     for i in attributes:
-        print(i)
 
         new_split, impurity_left, impurity_right, percentage_left, percentage_right = best_split_one_attribute(data_x[:, i], data_y, minleaf)
         children_impurity = impurity_left * percentage_left + impurity_right * percentage_right
@@ -180,16 +200,34 @@ def best_split_all_attributes(data_x: [[]], data_y: [], minleaf: int, attributes
             best_split = new_split
             best_attribute = i
 
+    # here, when an attribute has been used, it is removed from the list of attributes
+    # that can be used in the next iteration!
+    # in fact, an attribute can not be used twice for splitting the data.
     del attributes[best_attribute]
 
     return best_attribute, best_split, best_impurity_left, best_impurity_right
 
 
+def print_tree(node, attributes, level: int = 0):
+    """
+    This function will print the whole tree.
 
+    :param node: node to start the search from the tree, Should be root
+    :param level: auxiliar variable in order to know the depth level due to the recursive nature of the function
+    :return: level of depth of the moment
+    """
+    print("Level:", level)
+    if node.is_leaf:
+        print('Node is a leaf, classification:', str(node.classification))
+    else:
+        print("Intermediate node, attribute and value:", attributes[node.attribute], "<=", node.value)
 
-    # in this function, use the compute_gini_index function to compute the
-    # gini index (or impurity) of a split.
+    level += 1
 
-    # best_split = min(compute_gini_index())
+    if node.left is not None:
+        print_tree(node.left, attributes, level)
 
-    # return best_split
+    if node.right is not None:
+        print_tree(node.right, attributes, level)
+
+    return level
