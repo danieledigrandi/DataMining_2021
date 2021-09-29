@@ -109,6 +109,10 @@ def compute_gini_index(labels: []):
     unique, counts = np.unique(labels, return_counts=True)
     count_0_and_1 = dict(zip(unique, counts))
 
+    # if nothing was classified as 0:
+    if 0 not in count_0_and_1:
+        count_0_and_1[0] = 0
+
     p_0 = count_0_and_1[0]/total
 
     gini_index = p_0 * (1 - p_0)
@@ -130,13 +134,13 @@ def best_split_one_attribute(data_x: [], data_y: [], minleaf: int):
 
     lowest_impurity = 1
     best_impurity_left, best_impurity_right = 1, 1
-    best_split = 0
+    best_split = None
     best_percentage_left, best_percentage_right = 1, 0  # initialized as all cases will go to the left child
 
     sorted_values = np.sort(np.unique(data_x))
     len_sorted = len(sorted_values)
     # generate all the values 'in between' the given values:
-    possible_splits = (sorted[0:len_sorted - 1] + sorted[1:len_sorted]) / 2
+    possible_splits = (sorted_values[0:(len_sorted - 1)] + sorted_values[1:len_sorted]) / 2
     # Eg: if sorted = [1, 2, 4] --> possible_splits = [1.5, 3]
     sorted_indices = data_x.argsort()
 
@@ -186,6 +190,8 @@ def best_split_all_attributes(data_x: [[]], data_y: [], minleaf: int, attributes
 
     lowest_impurity = 1
     best_impurity_left, best_impurity_right = 1, 1
+    best_split = None
+    best_attribute = None
 
     # a split can be made only on attributes that have not yet been used!
     for i in attributes:
