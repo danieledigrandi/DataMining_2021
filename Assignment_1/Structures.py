@@ -1,5 +1,7 @@
 from Assignment_1.Utils import best_split_all_attributes
 
+#minleaf and nmin should both be in the calculate best split(?)
+#multiple splits on the same attribute should be possible(?)
 
 class Node:
     """
@@ -31,6 +33,7 @@ class Node:
         self.right = None
 
     # make a function to split the data
+
     def split(self, data_x: [[]], data_y: [], nmin: int, minleaf: int, nfeat: int, attributes: dict):
         """
         This function made the Tree grows by splitting the data in input into 2 different groups.
@@ -51,12 +54,30 @@ class Node:
         """
 
         # use the best_split_all_attributes function as it has been already implemented
-
-
-
-
+        #if there still is a best_split_all_attributes available:
+        best_attribute, best_split, best_impurity_left, best_impurity_right = best_split_all_attributes(data_x, data_y, minleaf, attributes)
+        right_node_data = [[]]
+        right_node_label = []
+        left_node_data = [[]]
+        left_node_label = []
+        #sort the data left and right based on the best split
+        for xdata in data_x:
+            for ydata in data_y:
+                if xdata[best_attribute] > best_split:
+                    right_node_data.append(xdata)
+                    right_node_label(ydata)
+                else:
+                    left_node_data.append(xdata)
+                    left_node_label(ydata)
+        #set left and right node information
+        self.left = left_node_data, left_node_label
+        self.right = right_node_data, right_node_label
+        #create a new left and right node object and recursively split into new nodes until no more splits can be made
+        left_node = Node()
+        right_node = Node()
+        left_node.split(left_node_data, left_node_label, nmin, minleaf, nfeat, attributes)
+        right_node.split(right_node_data, right_node_label, nmin, minleaf, nfeat, attributes)
         return None
-
 
     def classify(self, data: []):
         """
