@@ -33,6 +33,7 @@ def main():
     result_tree = tree_pred(x_test, tree)
 
 
+
     # Visualize the Tree
     print("\nTree:")
     print_tree(node=tree.root, attributes=original)

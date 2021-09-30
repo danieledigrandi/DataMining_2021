@@ -189,7 +189,7 @@ def best_split_all_attributes(data_x: [[]], data_y: [], minleaf: int, attributes
     """
 
     lowest_impurity = 1
-    best_impurity_left, best_impurity_right = 1, 1
+    best_impurity_left, best_impurity_right = 0, 0
     best_split = None
     best_attribute = None
 
@@ -209,7 +209,7 @@ def best_split_all_attributes(data_x: [[]], data_y: [], minleaf: int, attributes
     # here, when an attribute has been used, it is removed from the list of attributes
     # that can be used in the next iteration!
     # in fact, an attribute can not be used twice for splitting the data.
-    del attributes[best_attribute]
+    # del attributes[best_attribute]
 
     return best_attribute, best_split, best_impurity_left, best_impurity_right
 
