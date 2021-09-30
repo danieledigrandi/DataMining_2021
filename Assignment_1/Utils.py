@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+from sklearn import metrics
 
 
 def read_data(file):
@@ -237,3 +238,28 @@ def print_tree(node, attributes, level: int = 0):
         print_tree(node.right, attributes, level)
 
     return level
+
+
+def evaluation(data_y: [], predictions: []):
+    """
+    Function that compares the predictions with the real classifications and calculates accuracy, precision and recall
+
+    :param data_y: real classifications
+    :param predictions: predictions
+    :return: accuracy, precision and recall
+    """
+
+    accuracy = metrics.accuracy_score(data_y, predictions)
+    print("Accuracy:", accuracy)
+    print("All information of each label:")
+    print(metrics.classification_report(data_y, predictions))
+    print("Confusion Matrix:")
+    print(metrics.confusion_matrix(data_y, predictions))
+    print("Precision Score:")
+    precision = metrics.precision_score(data_y, predictions)
+    print(precision)
+    print("Recall Score:")
+    recall = metrics.recall_score(data_y, predictions)
+    print(recall)
+
+    return accuracy, precision, recall

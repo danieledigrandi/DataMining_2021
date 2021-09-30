@@ -1,7 +1,7 @@
 # Data mining project 2021 - assignment 1
 import pandas as pd
 import numpy
-from Assignment_1.Utils import read_data, split_label, get_attributes_list, print_tree
+from Assignment_1.Utils import read_data, split_label, get_attributes_list, print_tree, evaluation
 from Assignment_1.Structures import Tree
 from math import sqrt
 from Assignment_1.Functions import *
@@ -9,8 +9,8 @@ from Assignment_1.Functions import *
 
 def main():
 
-    file_train = "credit"  # possible values: "credit", "pima", "eclipse-train"
-    file_test = "credit"  # possible values: "credit", "pima", "eclipse-test"
+    file_train = "pima"  # possible values: "credit", "pima", "eclipse-train"
+    file_test = "pima"  # possible values: "credit", "pima", "eclipse-test"
 
 
     data_train = read_data(file_train)
@@ -21,8 +21,8 @@ def main():
     attributes = get_attributes_list(x_train, data_train)
     original = attributes.copy()
 
-    nmin = 2
-    minleaf = 1
+    nmin = 20
+    minleaf = 5
     nfeat = int(len(x_train[0]))
     nfeat_forest = int(round(sqrt(len(x_train[0]))))
     m = 0
@@ -32,6 +32,7 @@ def main():
     tree = tree_grow(x_train, y_train, nmin=nmin, minleaf=minleaf, nfeat=nfeat, attributes=attributes)
     result_tree = tree_pred(x_test, tree)
 
+    st_accuracy, st_precision, st_recall = evaluation(y_test, result_tree)
 
 
     # Visualize the Tree
