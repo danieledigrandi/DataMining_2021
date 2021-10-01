@@ -9,8 +9,8 @@ from Assignment_1.Functions import *
 
 def main():
 
-    file_train = "pima"  # possible values: "credit", "pima", "eclipse-train"
-    file_test = "pima"  # possible values: "credit", "pima", "eclipse-test"
+    file_train = "eclipse-train"  # possible values: "credit", "pima", "eclipse-train"
+    file_test = "eclipse-test"  # possible values: "credit", "pima", "eclipse-test"
 
 
     data_train = read_data(file_train)
@@ -21,7 +21,7 @@ def main():
     attributes = get_attributes_list(x_train, data_train)
     original = attributes.copy()
 
-    nmin = 20
+    nmin = 15
     minleaf = 5
     nfeat = int(len(x_train[0]))
     nfeat_forest = int(round(sqrt(len(x_train[0]))))
@@ -31,6 +31,9 @@ def main():
     # Constructing the Tree
     tree = tree_grow(x_train, y_train, nmin=nmin, minleaf=minleaf, nfeat=nfeat, attributes=attributes)
     result_tree = tree_pred(x_test, tree)
+
+    df = pd.DataFrame(data={"col1": result_tree})
+    df.to_csv("Result_tree.csv", sep=";")
 
     st_accuracy, st_precision, st_recall = evaluation(y_test, result_tree)
 

@@ -33,7 +33,6 @@ class Node:
         self.left = None
         self.right = None
 
-    # make a function to split the data
 
     def split(self, data_x: [[]], data_y: [], nmin: int, minleaf: int, nfeat: int, attributes: dict):
         """
@@ -66,21 +65,27 @@ class Node:
         right_node_data = data_x[:, best_attribute] > best_split
 
 
-
         if best_impurity_left == 0 or len(data_x[left_node_data]) < nmin:
 
             unique, counts = np.unique(data_y[left_node_data], return_counts=True)
             count_0_and_1 = dict(zip(unique, counts))
 
+
             # if nothing was classified as 0:
             if 0 not in count_0_and_1:
                 count_0_and_1[0] = 0
+
 
             # if nothing was classified as 1:
             if 1 not in count_0_and_1:
                 count_0_and_1[1] = 0
 
-            classification = max(count_0_and_1, key=count_0_and_1.get)
+            # if the number of 1s is equal to number of 0s: classify as 0
+            # else, classify with the major class.
+            if count_0_and_1[0] == count_0_and_1[1]:
+                classification = 0
+            else:
+                classification = max(count_0_and_1, key=count_0_and_1.get)
 
             self.left = Node(leaf=True, classification=classification)
 
@@ -102,7 +107,12 @@ class Node:
             if 1 not in count_0_and_1:
                 count_0_and_1[1] = 0
 
-            classification = max(count_0_and_1, key=count_0_and_1.get)
+            # if the number of 1s is equal to number of 0s: classify as 0
+            # else, classify with the major class.
+            if count_0_and_1[0] == count_0_and_1[1]:
+                classification = 0
+            else:
+                classification = max(count_0_and_1, key=count_0_and_1.get)
 
             self.right = Node(leaf=True, classification=classification)
 
