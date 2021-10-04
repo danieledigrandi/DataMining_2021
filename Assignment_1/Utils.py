@@ -3,37 +3,35 @@ import numpy as np
 from sklearn import metrics
 
 
-def read_data(file):
+def read_data(path_data_train, path_data_test):
     """
     This function is used to open the data using a pandas Dataframe.
 
-    :param file: the file to open. Possible values: "credit", "pima", "eclipse-train", "eclipse-test".
-    :return: the opened data as a pandas Dataframe.
+    :param path_data_train: the complete path in which the file containing the training data is located on a PC.
+    :param path_data_test: the complete path in which the file containing the testing data is located on a PC.
+    :return: both the data_train and data_test opened as a pandas Dataframe.
     """
 
-    if file == "credit":
-        file = "./Assignment_1/data/credit.txt"
-        data = pd.read_csv(file, sep=',')
+    if path_data_train.endswith("credit.txt") or path_data_train.endswith("pima.txt"):
+        data_train = pd.read_csv(path_data_train, sep=',')
+        data_test = pd.read_csv(path_data_test, sep=',')
 
-    elif file == "pima":
-        file = "./Assignment_1/data/pima.txt"
-        data = pd.read_csv(file, sep=',')
 
-    elif file == "eclipse-train" or file == "eclipse-test":
-
-        if file == "eclipse-train":
-            file = "./Assignment_1/data/promise-2_0a-packages-csv/eclipse-metrics-packages-2.0.csv"
-        else:
-            file = "./Assignment_1/data/promise-2_0a-packages-csv/eclipse-metrics-packages-3.0.csv"
-
-        data_temp = pd.read_csv(file, sep=';')
-        data = data_temp[["pre", "post", "ACD_avg", "ACD_max", "ACD_sum", "FOUT_avg", "FOUT_max", "FOUT_sum", "MLOC_avg", "MLOC_max", "MLOC_sum",
+    else:
+        data_temp_train = pd.read_csv(path_data_train, sep=';')
+        data_temp_test = pd.read_csv(path_data_test, sep=';')
+        data_train = data_temp_train[["pre", "post", "ACD_avg", "ACD_max", "ACD_sum", "FOUT_avg", "FOUT_max", "FOUT_sum", "MLOC_avg", "MLOC_max", "MLOC_sum",
+                                "NBD_avg", "NBD_max", "NBD_sum", "NOCU", "NOF_avg", "NOF_max", "NOF_sum", "NOI_avg", "NOI_max", "NOI_sum",
+                                "NOM_avg", "NOM_max", "NOM_sum", "NOT_avg", "NOT_max", "NOT_sum", "NSF_avg", "NSF_max", "NSF_sum", "NSM_avg",
+                                "NSM_max", "NSM_sum", "PAR_avg", "PAR_max", "PAR_sum", "TLOC_avg", "TLOC_max", "TLOC_sum", "VG_avg", "VG_max",
+                                "VG_sum"]]
+        data_test = data_temp_test[["pre", "post", "ACD_avg", "ACD_max", "ACD_sum", "FOUT_avg", "FOUT_max", "FOUT_sum", "MLOC_avg", "MLOC_max", "MLOC_sum",
                                 "NBD_avg", "NBD_max", "NBD_sum", "NOCU", "NOF_avg", "NOF_max", "NOF_sum", "NOI_avg", "NOI_max", "NOI_sum",
                                 "NOM_avg", "NOM_max", "NOM_sum", "NOT_avg", "NOT_max", "NOT_sum", "NSF_avg", "NSF_max", "NSF_sum", "NSM_avg",
                                 "NSM_max", "NSM_sum", "PAR_avg", "PAR_max", "PAR_sum", "TLOC_avg", "TLOC_max", "TLOC_sum", "VG_avg", "VG_max",
                                 "VG_sum"]]
 
-    return data
+    return data_train, data_test
 
 
 def split_label(data, file):
@@ -41,23 +39,23 @@ def split_label(data, file):
     This function will split the label column from the attributes columns of given data.
 
     :param data: data that have to be split.
-    :param file: the file name. Possible values: "credit", "pima", "eclipse-train", "eclipse-test".
+    :param file: the filepath in which the data are located on a PC.
     :return: data_x which is an array of attributes and data_y which are the corresponding labels.
     """
 
     data_copy = data.copy(deep=True)
 
-    if file == "credit":
+    if file.endswith("credit.txt"):
         data_y = np.array(data_copy["class"])
         data_copy.drop("class", inplace=True, axis=1)
         data_x = np.array(data_copy)
 
-    elif file == "pima":
+    elif file.endswith("pima.txt"):
         data_y = np.array(data_copy["class"])
         data_copy.drop("class", inplace=True, axis=1)
         data_x = np.array(data_copy)
 
-    elif file == "eclipse-train" or file == "eclipse-test":
+    else:
         data_y = np.array(data_copy["post"])
         data_y[data_y > 0] = 1
         data_copy.drop("post", inplace=True, axis=1)
@@ -207,11 +205,6 @@ def best_split_all_attributes(data_x: [[]], data_y: [], minleaf: int, attributes
             best_split = new_split
             best_attribute = i
 
-    # here, when an attribute has been used, it is removed from the list of attributes
-    # that can be used in the next iteration!
-    # in fact, an attribute can not be used twice for splitting the data.
-    # del attributes[best_attribute]
-
     return best_attribute, best_split, best_impurity_left, best_impurity_right
 
 
@@ -242,24 +235,27 @@ def print_tree(node, attributes, level: int = 0):
 
 def evaluation(data_y: [], predictions: []):
     """
-    Function that compares the predictions with the real classifications and calculates accuracy, precision and recall
+    This function will calculate the accuracy, precision and recall by comparing
+    the predictions obtained by a certain model with the actual values.
 
-    :param data_y: real classifications
-    :param predictions: predictions
-    :return: accuracy, precision and recall
+    :param data_y: array of classifications.
+    :param predictions: array of predicted values.
+    :return: accuracy, precision and recall.
     """
 
-    accuracy = metrics.accuracy_score(data_y, predictions)
-    print("Accuracy:", accuracy)
-    print("All information of each label:")
+    print("\nReport:")
     print(metrics.classification_report(data_y, predictions))
-    print("Confusion Matrix:")
+
+    print("\nConfusion Matrix:")
     print(metrics.confusion_matrix(data_y, predictions))
-    print("Precision Score:")
+
+    accuracy = metrics.accuracy_score(data_y, predictions)
+    print("\nAccuracy:", accuracy)
+
     precision = metrics.precision_score(data_y, predictions)
-    print(precision)
-    print("Recall Score:")
+    print("Precision:", precision)
+
     recall = metrics.recall_score(data_y, predictions)
-    print(recall)
+    print("Recall:", recall)
 
     return accuracy, precision, recall

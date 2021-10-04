@@ -1,8 +1,7 @@
 from Assignment_1.Utils import best_split_all_attributes
 import numpy as np
+import random
 
-#minleaf and nmin should both be in the calculate best split(?)
-#multiple splits on the same attribute should be possible(?)
 
 class Node:
     """
@@ -34,7 +33,7 @@ class Node:
         self.right = None
 
 
-    def split(self, data_x: [[]], data_y: [], nmin: int, minleaf: int, nfeat: int, attributes: dict):
+    def split(self, data_x: [[]], data_y: [], nmin: int, minleaf: int, nfeat: int, attributes: dict, rf_mode: int):
         """
         This function made the Tree grows by splitting the data in input into 2 different groups.
         To do this, it iterates through nfeat attributes and calculate the best split of each.
@@ -50,53 +49,31 @@ class Node:
         :param nfeat: number of attributes that are used to get the best attribute for splitting the data.
         :param attributes: a dictionary that specifies the attributes available to make a split.
         Format: attributes = {0: "attribute_0", 1: "attribute_1", ...}.
+        :param rf_mode: whether the random forest mode is active. 0 means no, 1 means that the computation will be performed
+        using the random forest method. This is because in this case, we can select nfeat attributes
+        each time we are going to make a split.
         :return: None, it simply stores in its variables the created nodes and their connections.
         """
 
-        # use the best_split_all_attributes function as it has been already implemented
-        #if there still is a best_split_all_attributes available:
-        best_attribute, best_split, best_impurity_left, best_impurity_right = best_split_all_attributes(data_x, data_y, minleaf, attributes)
+        if rf_mode:
+            random_forest_attributes = random.sample(list(attributes), nfeat)
+            best_attribute, best_split, best_impurity_left, best_impurity_right = best_split_all_attributes(data_x, data_y, minleaf, random_forest_attributes)
+
+            # if maybe we had bad luck with the first attributes selection, try again with 6 different attributes:
+            while best_attribute is None and best_split is None:
+                random_forest_attributes = random.sample(list(attributes), nfeat)
+                best_attribute, best_split, best_impurity_left, best_impurity_right = best_split_all_attributes(data_x, data_y, minleaf, random_forest_attributes)
+        else:
+            best_attribute, best_split, best_impurity_left, best_impurity_right = best_split_all_attributes(data_x, data_y, minleaf, attributes)
+
 
         self.attribute = best_attribute
         self.value = best_split
 
-        # sort the data left and right based on the best split
-        left_node_data = data_x[:, best_attribute] <= best_split
-        right_node_data = data_x[:, best_attribute] > best_split
 
-
-        if best_impurity_left == 0 or len(data_x[left_node_data]) < nmin:
-
-            unique, counts = np.unique(data_y[left_node_data], return_counts=True)
-            count_0_and_1 = dict(zip(unique, counts))
-
-
-            # if nothing was classified as 0:
-            if 0 not in count_0_and_1:
-                count_0_and_1[0] = 0
-
-
-            # if nothing was classified as 1:
-            if 1 not in count_0_and_1:
-                count_0_and_1[1] = 0
-
-            # if the number of 1s is equal to number of 0s: classify as 0
-            # else, classify with the major class.
-            if count_0_and_1[0] == count_0_and_1[1]:
-                classification = 0
-            else:
-                classification = max(count_0_and_1, key=count_0_and_1.get)
-
-            self.left = Node(leaf=True, classification=classification)
-
-        else:
-            self.left = Node()
-            self.left.split(data_x[left_node_data], data_y[left_node_data], nmin, minleaf, nfeat, attributes)
-
-
-        if best_impurity_right == 0 or (len(data_x[right_node_data]) < nmin):
-
-            unique, counts = np.unique(data_y[right_node_data], return_counts=True)
+        # if no split is allowed on the given attributes, then the node is a leaf
+        if self.attribute is None and self.value is None:
+            unique, counts = np.unique(data_y, return_counts=True)
             count_0_and_1 = dict(zip(unique, counts))
 
             # if nothing was classified as 0:
@@ -114,11 +91,70 @@ class Node:
             else:
                 classification = max(count_0_and_1, key=count_0_and_1.get)
 
-            self.right = Node(leaf=True, classification=classification)
+            self.is_leaf = True
+            self.classification = classification
 
         else:
-            self.right = Node()
-            self.right.split(data_x[right_node_data], data_y[right_node_data], nmin, minleaf, nfeat, attributes)
+            # if we have a split and attribute value,
+            # sort the data left and right based on the best split
+            left_node_data = data_x[:, best_attribute] <= best_split
+            right_node_data = data_x[:, best_attribute] > best_split
+
+            # checking the left child
+
+            if best_impurity_left == 0 or len(data_x[left_node_data]) < nmin:
+
+                unique, counts = np.unique(data_y[left_node_data], return_counts=True)
+                count_0_and_1 = dict(zip(unique, counts))
+
+                # if nothing was classified as 0:
+                if 0 not in count_0_and_1:
+                    count_0_and_1[0] = 0
+
+                # if nothing was classified as 1:
+                if 1 not in count_0_and_1:
+                    count_0_and_1[1] = 0
+
+                # if the number of 1s is equal to number of 0s: classify as 0
+                # else, classify with the major class.
+                if count_0_and_1[0] == count_0_and_1[1]:
+                    classification = 0
+                else:
+                    classification = max(count_0_and_1, key=count_0_and_1.get)
+
+                self.left = Node(leaf=True, classification=classification)
+
+            else:
+                self.left = Node()
+                self.left.split(data_x[left_node_data], data_y[left_node_data], nmin, minleaf, nfeat, attributes, rf_mode)
+
+            # checking the right child
+
+            if best_impurity_right == 0 or (len(data_x[right_node_data]) < nmin):
+
+                unique, counts = np.unique(data_y[right_node_data], return_counts=True)
+                count_0_and_1 = dict(zip(unique, counts))
+
+                # if nothing was classified as 0:
+                if 0 not in count_0_and_1:
+                    count_0_and_1[0] = 0
+
+                # if nothing was classified as 1:
+                if 1 not in count_0_and_1:
+                    count_0_and_1[1] = 0
+
+                # if the number of 1s is equal to number of 0s: classify as 0
+                # else, classify with the major class.
+                if count_0_and_1[0] == count_0_and_1[1]:
+                    classification = 0
+                else:
+                    classification = max(count_0_and_1, key=count_0_and_1.get)
+
+                self.right = Node(leaf=True, classification=classification)
+
+            else:
+                self.right = Node()
+                self.right.split(data_x[right_node_data], data_y[right_node_data], nmin, minleaf, nfeat, attributes, rf_mode)
 
 
     def classify(self, data: []):
@@ -139,7 +175,6 @@ class Node:
                 return self.right.classify(data)
 
 
-
 class Tree:
     """
     Class created to define a Tree object, and it simply has a pointer to a Node,
@@ -152,12 +187,13 @@ class Tree:
         """
         Constructor for the class Tree that generates a root Node object.
         """
+
         self.root = Node(root=True)
 
 
-    def grow(self, data_x: [[]], data_y: [], nmin: int, minleaf: int, nfeat: int, attributes: dict):
+    def grow(self, data_x: [[]], data_y: [], nmin: int, minleaf: int, nfeat: int, attributes: dict, rf_mode: int):
         """
-        This function grows the tree using the x_train data together with their labels y_train.
+        This function grows the tree using the x_train data (here: data_x) together with their labels y_train (here: data_y).
         How the tree grows: recursively, it calls the method split from the class Node.
 
         :param data_x: array of data attributes and values passed without the classification labels.
@@ -167,24 +203,120 @@ class Tree:
         :param nfeat: number of attributes that are used to get the best attribute for splitting the data.
         :param attributes: a dictionary that specifies the attributes available to make a split.
         Format: attributes = {0: "attribute_0", 1: "attribute_1", ...}.
+        :param rf_mode: whether the random forest mode is active. 0 means no, 1 means that the computation will be performed
+        using the random forest method. This is because in this case, we can select nfeat attributes
+        each time we are going to make a split.
         :return: Tree created using the training set.
         """
-        self.root.split(data_x, data_y, nmin=nmin, minleaf=minleaf, nfeat=nfeat, attributes=attributes)
+
+        self.root.split(data_x, data_y, nmin=nmin, minleaf=minleaf, nfeat=nfeat, attributes=attributes, rf_mode=rf_mode)
 
 
     def classify(self, data_x: [[]]):
         """
-        This function classifies the data recieved into one of the classifications generated from the tree grow, for
-        that, it uses the recursive function from Node class accessing to the root Node
+        This function uses a single Tree to classify the data received in input.
 
-        :param x: list of vectors of the data to classify
-        :return: classifications of x
+        :param data: data to be classified.
+        :param tree: tree used to classify the data in input.
+        :return: classification of the data.
         """
 
         predictions = []
 
         for observation in data_x:
-            temp = self.root.classify(observation)
-            predictions.append(temp)
+            predictions.append(self.root.classify(observation))
 
         return predictions
+
+
+class Forest:
+    """
+    Class created to define a Forest object. A Forest is defined as a List of Trees.
+    """
+
+    def __init__(self):
+        """
+        Constructor for the class Forest.
+        """
+        self.forest = []
+        self.classification = []
+
+
+    def grow_b(self, x: [[]], y: [], nmin: int, minleaf: int, nfeat: int, m: int, attributes: dict, rf_mode: int):
+        """
+        This function let grows a Forest.
+        It can be used also to let grow a Bagging.
+
+        :param x: array of data attributes and values passed without the classification labels.
+        :param y: array of classifications in the same order of x.
+        :param nmin: minimum number of observations (elements) in order to create a Node.
+        :param minleaf: minimum number of observations (elements) in order to create a leaf.
+        :param nfeat: number of attributes that are used to get the best attribute for splitting the data.
+        :param m: number of trees to grow in the current forest.
+        :param attributes: a dictionary that specifies the attributes available to make a split.
+        Format: attributes = {0: "attribute_0", 1: "attribute_1", ...}.
+        :param rf_mode: whether the random forest mode is active. 0 means no, 1 means that the computation will be performed
+        using the random forest method. This is because in this case, we can select nfeat attributes
+        each time we are going to make a split.
+        :return: Forest created using the training set.
+        """
+
+        # averaging with bootstrapping: randomly select the used data
+        for i in range(m):
+            new_x_data, new_y_data = np.empty_like(x), np.empty_like(y)
+            for j in range(len(y)):
+                observation = random.randint(0, len(y)-1)
+                new_x_data[j] = x[observation]
+                new_y_data[j] = y[observation]
+
+            tree = Tree()
+            tree.grow(new_x_data, new_y_data, nmin, minleaf, nfeat, attributes, rf_mode)
+            self.forest.append(tree)
+
+            if i % 5 == 0 and i != 0:
+                print("Trees evaluated by far:", i, "/", m)
+            if i == m - 1:
+                print("Trees evaluated by far:", i + 1, "/", m)
+
+        return self.forest
+
+
+    def pred_b(self, data, trees):
+        """
+        This function uses a Forest (or Bagging) to classify the data received in input.
+
+        :param data: data to be classified.
+        :param trees: list of Trees used to classify the data.
+        :return: classification of the data.
+        """
+
+        self.classification = np.zeros(len(data))
+        count = []
+
+        for tree in trees:
+            count.append(tree.classify(data))
+        count = np.array(count)
+
+        for column in range(len(count[0])):
+
+            unique, counts = np.unique(count[:, column], return_counts=True)
+            count_0_and_1 = dict(zip(unique, counts))
+
+            # if nothing was classified as 0:
+            if 0 not in count_0_and_1:
+                count_0_and_1[0] = 0
+
+            # if nothing was classified as 1:
+            if 1 not in count_0_and_1:
+                count_0_and_1[1] = 0
+
+            # if the number of 1s is equal to number of 0s: classify as 0
+            # else, classify with the major class.
+            if count_0_and_1[0] == count_0_and_1[1]:
+                classification = 0
+            else:
+                classification = max(count_0_and_1, key=count_0_and_1.get)
+
+            self.classification[column] = classification
+
+        return self.classification
