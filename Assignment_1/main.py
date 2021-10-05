@@ -5,6 +5,7 @@ import numpy as np
 import random
 import pandas as pd
 from sklearn import metrics
+from mlxtend.evaluate import paired_ttest_5x2cv
 
 """
 ---------------------------------------------------------------------------------------------
@@ -106,10 +107,14 @@ class Node:
             random_forest_attributes = random.sample(list(attributes), nfeat)
             best_attribute, best_split, best_impurity_left, best_impurity_right = best_split_all_attributes(data_x, data_y, minleaf, random_forest_attributes)
 
-            # if maybe we had bad luck with the first attributes selection, try again with 6 different attributes:
-            while best_attribute is None and best_split is None:
+            # if maybe we had bad luck with the first attributes selection, try again with nfeat different attributes
+            # until a certain threshold value of 300 iterations was reached:
+            threshold = 300
+            num_iter = 0
+            while best_attribute is None and best_split is None and num_iter < threshold:
                 random_forest_attributes = random.sample(list(attributes), nfeat)
                 best_attribute, best_split, best_impurity_left, best_impurity_right = best_split_all_attributes(data_x, data_y, minleaf, random_forest_attributes)
+                num_iter += 1
         else:
             best_attribute, best_split, best_impurity_left, best_impurity_right = best_split_all_attributes(data_x, data_y, minleaf, attributes)
 
@@ -705,26 +710,139 @@ def evaluation(data_y: [], predictions: []):
 
 
 def menu():
+    """
+    This function implement a command-line menu to make the application interactive for a user.
+    """
 
-    possible_choices = ["0", "1", "2", "3", "4"]
+    possible_choices = ["0", "1", "2", "3", "4", "5"]
     print("\nPress 1 to construct and evaluate a single tree")
     print("Press 2 to construct and evaluate a random forest")
     print("Press 3 to construct and evaluate a bagging")
-    print("Press 4 to print the current single tree")
+    print("Press 4 to run a ttest_5x2cv to know the statistical significance between models")
+    print("Press 5 to print the current single tree")
+    print("Press 6 to change the nmin, minleaf and m parameters")
     print("Press 0 to exit")
     choice = input("Choice: ")
 
-    if choice not in possible_choices:
+    while choice not in possible_choices:
         print("\nWrong input! Please, insert a valid one.")
-        choice = menu()
+        choice = input("Choice: ")
 
     return int(choice)
 
+
+def get_params(nmin=15, minleaf=5, m=100):
+
+    possible_choices = ["0", "1"]
+    print(f"\nCurrent parameters are: nmin = {nmin}, minleaf = {minleaf}, m = {m}")
+    if nmin == 15 and minleaf == 5 and m == 100:
+        print("Those parameters are the ones to use in the eclipse data.")
+    print("The nfeat parameter is calculated automatically.")
+    print("\nDo you want to insert different parameters for nmin, minleaf and m? (0 for no / 1 for yes)")
+    choice = input("Choice: ")
+
+    while choice not in possible_choices:
+        print("\nWrong input! Please, insert a valid one.")
+        print("Do you want to insert different parameters for nmin, minleaf and m? (0 for no / 1 for yes)")
+        choice = input("Choice: ")
+
+    choice = int(choice)
+
+    if choice == 0:
+
+        return nmin, minleaf, m
+
+    else:
+
+        nmin = int(input("\nPlease enter the nmin parameter: "))
+        minleaf = int(input("Please enter the minleaf parameter: "))
+        m = int(input("Please enter the m parameter: "))
+
+    return nmin, minleaf, m
+
+
+def ttest_5x2cv(tree, forest, bagging, x_test, y_test):
+
+    print('\nTree vs Forest...')
+    t1, p1 = paired_ttest_5x2cv(estimator1=tree, estimator2=forest, X=x_test, y=y_test, random_seed=1, scoring='accuracy')
+    print('\nt statistic (Tree vs Forest): %.3f' % t1)
+    print('p value (Tree vs Forest): %.3f' % p1)
+
+    print('\nTree vs Bagging...')
+    t2, p2 = paired_ttest_5x2cv(estimator1=tree, estimator2=bagging, X=x_test, y=y_test, random_seed=1, scoring='accuracy')
+    print('\nt statistic (Tree vs Bagging): %.3f' % t2)
+    print('p value (Tree vs Bagging): %.3f' % p2)
+
+    print('\nForest vs Bagging...')
+    t3, p3 = paired_ttest_5x2cv(estimator1=forest, estimator2=bagging, X=x_test, y=y_test, random_seed=1, scoring='accuracy')
+    print('\nt statistic (Forest vs Bagging): %.3f' % t3)
+    print('p value (Forest vs Bagging): %.3f' % p3)
+
+
+"""
+def mine_paired_ttest_5x2cv(estimator1, estimator2, X, y,
+                       scoring=None,
+                       random_seed=None):
+
+    rng = np.random.RandomState(random_seed)
+
+    if scoring is None:
+        if estimator1._estimator_type == 'classifier':
+            scoring = 'accuracy'
+        elif estimator1._estimator_type == 'regressor':
+            scoring = 'r2'
+        else:
+            raise AttributeError('Estimator must '
+                                 'be a Classifier or Regressor.')
+    if isinstance(scoring, str):
+        scorer = get_scorer(scoring)
+    else:
+        scorer = scoring
+
+    variance_sum = 0.
+    first_diff = None
+
+    def score_diff(X_1, X_2, y_1, y_2):
+
+        estimator1.fit(X_1, y_1)
+        estimator2.fit(X_1, y_1)
+        est1_score = scorer(estimator1, X_2, y_2)
+        est2_score = scorer(estimator2, X_2, y_2)
+        score_diff = est1_score - est2_score
+        return score_diff
+
+    for i in range(5):
+
+        randint = rng.randint(low=0, high=32767)
+        X_1, X_2, y_1, y_2 = \
+            train_test_split(X, y, test_size=0.5,
+                             random_state=randint)
+
+        score_diff_1 = score_diff(X_1, X_2, y_1, y_2)
+        score_diff_2 = score_diff(X_2, X_1, y_2, y_1)
+        score_mean = (score_diff_1 + score_diff_2) / 2.
+        score_var = ((score_diff_1 - score_mean)**2 +
+                     (score_diff_2 - score_mean)**2)
+        variance_sum += score_var
+        if first_diff is None:
+            first_diff = score_diff_1
+
+    numerator = first_diff
+    denominator = np.sqrt(1/5. * variance_sum)
+    t_stat = numerator / denominator
+
+    pvalue = stats.t.sf(np.abs(t_stat), 5)*2.
+    return float(t_stat), float(pvalue)
+    
+"""
 
 # ---------------------------------------------------------------------------------------------
 
 
 def main():
+    """
+    This function is the main function of our program.
+    """
 
     print("\n-------------------- Data Mining assignment 1 --------------------")
     print("Code developed by: Di Grandi Daniele, Hartkamp Jens, Hartog Alice.")
@@ -742,18 +860,20 @@ def main():
     x_train, y_train = split_label(data_train, path_data_train)
     x_test, y_test = split_label(data_test, path_data_test)
 
+    # get the attributes in a dictionary form (see the get_attributes_list for a better explanation)
     attributes = get_attributes_list(x_train, data_train)
-    original = attributes.copy()
 
-    nmin = 15
-    minleaf = 5
+    # initialize the nmin, minleaf, m and nfeat parameters
+    nmin, minleaf, m = get_params()
     nfeat = int(len(x_train[0]))
     nfeat_forest = int(round(sqrt(len(x_train[0]))))
-    m = 100
 
     choice = menu()
 
+    # check if model exists before make a statistical test
     tree_exists = False
+    forest_exists = False
+    bagging_exists = False
 
     while choice != 0:
 
@@ -771,6 +891,7 @@ def main():
             # Random Forest
             print("\nConstructing the random forest...")
             forest = tree_grow_b(x_train, y_train, nmin=nmin, minleaf=minleaf, nfeat=nfeat_forest, m=m, attributes=attributes, rf_mode=1)
+            forest_exists = True
             print("\nRandom forest has been constructed.")
             print("\nEvaluating the random forest...")
             result_forest = tree_pred_b(x_test, forest)
@@ -780,18 +901,34 @@ def main():
             # Bagging
             print("\nConstructing the bagging...")
             bagging = tree_grow_b(x_train, y_train, nmin=nmin, minleaf=minleaf, nfeat=nfeat, m=m, attributes=attributes, rf_mode=0)
+            bagging_exists = True
             print("\nBagging has been constructed.")
             print("\nEvaluating the bagging...")
             result_bagging = tree_pred_b(x_test, bagging)
             accuracy_bagging, precision_bagging, recall_bagging = evaluation(y_test, result_bagging)
 
+
         if choice == 4:
+
+            if tree_exists and forest_exists and bagging_exists:
+                ttest_5x2cv(tree, forest, bagging, x_test, y_test)
+
+            else:
+                print("\nError! One or more models don't exist!")
+                print("Please, call this function after having constructed all three models.")
+
+
+        if choice == 5:
             # Visualize the Tree
             if tree_exists:
                 print("\nTree:")
-                print_tree(node=tree.root, attributes=original)
+                print_tree(node=tree.root, attributes=attributes)
             else:
                 print("\nError! A tree must have been created first, in order to be printed.")
+
+        if choice == 6:
+            # Change the nmin, minleaf and m parameters
+            nmin, minleaf, m = get_params(nmin, minleaf, m)
 
         choice = menu()
 
