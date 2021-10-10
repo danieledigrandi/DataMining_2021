@@ -5,7 +5,8 @@ import numpy as np
 import random
 import pandas as pd
 from sklearn import metrics
-from mlxtend.evaluate import paired_ttest_5x2cv
+from time import time
+from statsmodels.stats.contingency_tables import mcnemar
 
 """
 ---------------------------------------------------------------------------------------------
@@ -268,8 +269,7 @@ class Tree:
         """
         This function uses a single Tree to classify the data received in input.
 
-        :param data: data to be classified.
-        :param tree: tree used to classify the data in input.
+        :param data_x: data to be classified.
         :return: classification of the data.
         """
 
@@ -444,6 +444,7 @@ def tree_pred_b(data: [[]], trees: [Tree]):
     :param trees: list of Trees used to classify the data.
     :return: classification of the data.
     """
+
     forest = Forest()
     return forest.pred_b(data, trees)
 
@@ -463,7 +464,6 @@ def read_data(path_data_train, path_data_test):
     if path_data_train.endswith("credit.txt") or path_data_train.endswith("pima.txt"):
         data_train = pd.read_csv(path_data_train, sep=',')
         data_test = pd.read_csv(path_data_test, sep=',')
-
 
     else:
         data_temp_train = pd.read_csv(path_data_train, sep=';')
@@ -664,6 +664,7 @@ def print_tree(node, attributes, level: int = 0):
     :param level: auxiliar variable in order to know the depth level due to the recursive nature of the function
     :return: level of depth of the moment
     """
+
     print("Level:", level)
     if node.is_leaf:
         print('Node is a leaf, classification:', str(node.classification))
@@ -688,7 +689,6 @@ def evaluation(data_y: [], predictions: []):
 
     :param data_y: array of classifications.
     :param predictions: array of predicted values.
-    :return: accuracy, precision and recall.
     """
 
     print("\nReport:")
@@ -705,8 +705,6 @@ def evaluation(data_y: [], predictions: []):
 
     recall = metrics.recall_score(data_y, predictions)
     print("Recall:", recall)
-
-    return accuracy, precision, recall
 
 
 def menu():
@@ -732,6 +730,13 @@ def menu():
 
 
 def get_params(nmin=15, minleaf=5, m=100):
+    """
+    Function to change at the beginning of the program the nmin, minleaf and m parameters, if needed.
+    :param nmin: new value for the nmin parameter.
+    :param minleaf: new value for the minleaf parameter.
+    :param m: new value for the m parameter.
+    :return: the new nmin, minleaf and m parameters.
+    """
 
     possible_choices = ["0", "1"]
     print(f"\nCurrent parameters are: nmin = {nmin}, minleaf = {minleaf}, m = {m}")
@@ -761,80 +766,87 @@ def get_params(nmin=15, minleaf=5, m=100):
     return nmin, minleaf, m
 
 
-def ttest_5x2cv(tree, forest, bagging, x_test, y_test):
+def statistic_test(result_tree, result_forest, result_bagging, y_test):
+    """
+    Function to perform a statistic test to see whether the models are similar, given alpha = 0.05.
+    We will perform a mcnemar test, hence:
+    H0: the models are similar.
+    H1: the models are not similar.
+
+    :param result_tree: the array of predicted values given in output by the tree model.
+    :param result_forest: the array of predicted values given in output by the random forest model.
+    :param result_bagging: the array of predicted values given in output by the bagging model.
+    :param y_test: the array of true labels that should have been predicted.
+    """
+
+    correct_tree = result_tree == y_test
+    correct_random_forest = result_forest == y_test
+    correct_bagging = result_bagging == y_test
+
+    alpha = 0.05
 
     print('\nTree vs Forest...')
-    t1, p1 = paired_ttest_5x2cv(estimator1=tree, estimator2=forest, X=x_test, y=y_test, random_seed=1, scoring='accuracy')
-    print('\nt statistic (Tree vs Forest): %.3f' % t1)
-    print('p value (Tree vs Forest): %.3f' % p1)
+    result1 = mcnemar_test(correct_tree, correct_random_forest)
+    print('statistic=%.6f' % result1.statistic)
+    print('p-value=%.6f' % result1.pvalue)
+    if result1.pvalue > alpha:
+        print('Fail to reject H0: thus, the models are similar.')
+    else:
+        print('Reject H0: thus, the models are not similar.')
 
     print('\nTree vs Bagging...')
-    t2, p2 = paired_ttest_5x2cv(estimator1=tree, estimator2=bagging, X=x_test, y=y_test, random_seed=1, scoring='accuracy')
-    print('\nt statistic (Tree vs Bagging): %.3f' % t2)
-    print('p value (Tree vs Bagging): %.3f' % p2)
+    result2 = mcnemar_test(correct_tree, correct_bagging)
+    print('statistic=%.6f' % result2.statistic)
+    print('p-value=%.6f' % result2.pvalue)
+    if result2.pvalue > alpha:
+        print('Fail to reject H0: thus, the models are similar.')
+    else:
+        print('Reject H0: thus, the models are not similar.')
 
     print('\nForest vs Bagging...')
-    t3, p3 = paired_ttest_5x2cv(estimator1=forest, estimator2=bagging, X=x_test, y=y_test, random_seed=1, scoring='accuracy')
-    print('\nt statistic (Forest vs Bagging): %.3f' % t3)
-    print('p value (Forest vs Bagging): %.3f' % p3)
-
-
-"""
-def mine_paired_ttest_5x2cv(estimator1, estimator2, X, y,
-                       scoring=None,
-                       random_seed=None):
-
-    rng = np.random.RandomState(random_seed)
-
-    if scoring is None:
-        if estimator1._estimator_type == 'classifier':
-            scoring = 'accuracy'
-        elif estimator1._estimator_type == 'regressor':
-            scoring = 'r2'
-        else:
-            raise AttributeError('Estimator must '
-                                 'be a Classifier or Regressor.')
-    if isinstance(scoring, str):
-        scorer = get_scorer(scoring)
+    result3 = mcnemar_test(correct_random_forest, correct_bagging)
+    print('statistic=%.6f' % result3.statistic)
+    print('p-value=%.6f' % result3.pvalue)
+    if result3.pvalue > alpha:
+        print('Fail to reject H0: thus, the models are similar.')
     else:
-        scorer = scoring
+        print('Reject H0: thus, the models are not similar.')
 
-    variance_sum = 0.
-    first_diff = None
 
-    def score_diff(X_1, X_2, y_1, y_2):
+def mcnemar_test(correct_1: [], correct_2: []):
+    """
+    In this function, the actual mcnemar test will be performed to compare the differences in accuracy
+    given in ouyput by two different models, and understand whether there is a statistical significance difference.
 
-        estimator1.fit(X_1, y_1)
-        estimator2.fit(X_1, y_1)
-        est1_score = scorer(estimator1, X_2, y_2)
-        est2_score = scorer(estimator2, X_2, y_2)
-        score_diff = est1_score - est2_score
-        return score_diff
+    :param correct_1: array of bools containing True if the i-th case is classified
+    correctly by the first model and False otherwise.
+    :param correct_2: array of bools containing True if the i-th case is classified
+    correctly by the second model algorithm and False otherwise.
+    :return: the result object given in output by the mcnemar function.
+    """
 
-    for i in range(5):
+    true_true, true_false, false_true, false_false = 0, 0, 0, 0
 
-        randint = rng.randint(low=0, high=32767)
-        X_1, X_2, y_1, y_2 = \
-            train_test_split(X, y, test_size=0.5,
-                             random_state=randint)
+    for i in range(len(correct_1)):
+        if correct_1[i]:
+            if correct_2[i]:
+                true_true += 1
+            else:
+                true_false += 1
+        else:
+            if correct_2[i]:
+                false_true += 1
+            else:
+                false_false += 1
 
-        score_diff_1 = score_diff(X_1, X_2, y_1, y_2)
-        score_diff_2 = score_diff(X_2, X_1, y_2, y_1)
-        score_mean = (score_diff_1 + score_diff_2) / 2.
-        score_var = ((score_diff_1 - score_mean)**2 +
-                     (score_diff_2 - score_mean)**2)
-        variance_sum += score_var
-        if first_diff is None:
-            first_diff = score_diff_1
+    contingency_table = [[true_true, true_false], [false_true, false_false]]
 
-    numerator = first_diff
-    denominator = np.sqrt(1/5. * variance_sum)
-    t_stat = numerator / denominator
+    print("Contingency table:", contingency_table)
 
-    pvalue = stats.t.sf(np.abs(t_stat), 5)*2.
-    return float(t_stat), float(pvalue)
-    
-"""
+    result = mcnemar(contingency_table, exact=False, correction=True)
+
+    return result
+
 
 # ---------------------------------------------------------------------------------------------
 
@@ -880,43 +892,56 @@ def main():
         if choice == 1:
             # Tree
             print("\nConstructing the single tree...")
+            t0 = time()
             tree = tree_grow(x_train, y_train, nmin=nmin, minleaf=minleaf, nfeat=nfeat, attributes=attributes, rf_mode=0)
+            t1 = time()
             tree_exists = True
-            print("\nSingle tree has been constructed.")
+            print("\nSingle tree has been constructed in", t1 - t0, "seconds.")
             print("\nEvaluating the single tree...")
+            t0 = time()
             result_tree = tree_pred(x_test, tree)
-            accuracy_tree, precision_tree, recall_tree = evaluation(y_test, result_tree)
+            t1 = time()
+            evaluation(y_test, result_tree)
+            print("\nPredictions for the single tree have been made in", t1 - t0, "seconds.")
 
         if choice == 2:
             # Random Forest
             print("\nConstructing the random forest...")
+            t0 = time()
             forest = tree_grow_b(x_train, y_train, nmin=nmin, minleaf=minleaf, nfeat=nfeat_forest, m=m, attributes=attributes, rf_mode=1)
+            t1 = time()
             forest_exists = True
-            print("\nRandom forest has been constructed.")
+            print("\nRandom forest has been constructed in", t1 - t0, "seconds.")
             print("\nEvaluating the random forest...")
+            t0 = time()
             result_forest = tree_pred_b(x_test, forest)
-            accuracy_forest, precision_forest, recall_forest = evaluation(y_test, result_forest)
+            t1 = time()
+            evaluation(y_test, result_forest)
+            print("\nPredictions for the random forest have been made in", t1 - t0, "seconds.")
 
         if choice == 3:
             # Bagging
             print("\nConstructing the bagging...")
+            t0 = time()
             bagging = tree_grow_b(x_train, y_train, nmin=nmin, minleaf=minleaf, nfeat=nfeat, m=m, attributes=attributes, rf_mode=0)
+            t1 = time()
             bagging_exists = True
-            print("\nBagging has been constructed.")
+            print("\nBagging has been constructed in", t1 - t0, "seconds.")
             print("\nEvaluating the bagging...")
+            t0 = time()
             result_bagging = tree_pred_b(x_test, bagging)
-            accuracy_bagging, precision_bagging, recall_bagging = evaluation(y_test, result_bagging)
-
+            t1 = time()
+            evaluation(y_test, result_bagging)
+            print("\nPredictions for bagging have been made in", t1 - t0, "seconds.")
 
         if choice == 4:
-
+            # Perform a statistical test between the 3 models, if they exists
             if tree_exists and forest_exists and bagging_exists:
-                ttest_5x2cv(tree, forest, bagging, x_test, y_test)
+                statistic_test(result_tree, result_forest, result_bagging, y_test)
 
             else:
                 print("\nError! One or more models don't exist!")
                 print("Please, call this function after having constructed all three models.")
-
 
         if choice == 5:
             # Visualize the Tree
