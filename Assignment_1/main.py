@@ -125,7 +125,7 @@ class Node:
 
 
         # if no split is allowed on the given attributes, then the node is a leaf
-        if self.attribute is None and self.value is None:
+        if self.attribute is None and self.value is None or len(data_x) < nmin:
             unique, counts = np.unique(data_y, return_counts=True)
             count_0_and_1 = dict(zip(unique, counts))
 
@@ -712,7 +712,7 @@ def menu():
     This function implement a command-line menu to make the application interactive for a user.
     """
 
-    possible_choices = ["0", "1", "2", "3", "4", "5"]
+    possible_choices = ["0", "1", "2", "3", "4", "5", "6"]
     print("\nPress 1 to construct and evaluate a single tree")
     print("Press 2 to construct and evaluate a random forest")
     print("Press 3 to construct and evaluate a bagging")
