@@ -124,7 +124,9 @@ class Node:
         self.value = best_split
 
 
-        # if no split is allowed on the given attributes, then the node is a leaf
+        # if no split is allowed on the given attributes, or the node contains less than nmin cases, then the node is a leaf.
+        # the only node that can contain less then nmin cases at this point, is the root node, since in further checks,
+        # a child node is immediately transformed in a leaf if the cases that will contain are less than nmin.
         if self.attribute is None and self.value is None or len(data_x) < nmin:
             unique, counts = np.unique(data_y, return_counts=True)
             count_0_and_1 = dict(zip(unique, counts))
