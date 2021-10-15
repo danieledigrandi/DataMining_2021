@@ -880,6 +880,7 @@ def main():
         if choice == 1:
             # Tree
             rf_mode = 0
+
             print("\nConstructing the single tree...")
             t0 = time()
             tree = tree_grow(x_train, y_train, nmin=nmin, minleaf=minleaf, nfeat=nfeat)
@@ -896,6 +897,7 @@ def main():
         if choice == 2:
             # Random Forest
             rf_mode = 1
+
             print("\nConstructing the random forest...")
             t0 = time()
             forest = tree_grow_b(x_train, y_train, nmin=nmin, minleaf=minleaf, nfeat=nfeat_forest, m=m)
@@ -912,6 +914,7 @@ def main():
         if choice == 3:
             # Bagging
             rf_mode = 0
+            
             print("\nConstructing the bagging...")
             t0 = time()
             bagging = tree_grow_b(x_train, y_train, nmin=nmin, minleaf=minleaf, nfeat=nfeat, m=m)
