@@ -246,7 +246,7 @@ class Tree:
         self.root = Node(root=True)
 
 
-    def grow(self, data_x: [[]], data_y: [], nmin: int, minleaf: int, nfeat: int, attributes: dict, rf_mode: int):
+    def grow(self, data_x: [[]], data_y: [], nmin: int, minleaf: int, nfeat: int):
         """
         This function grows the tree using the x_train data (here: data_x) together with their labels y_train (here: data_y).
         How the tree grows: recursively, it calls the method split from the class Node.
@@ -256,11 +256,6 @@ class Tree:
         :param nmin: minimum number of observations (elements) in order to create a Node.
         :param minleaf: minimum number of observations (elements) in order to create a leaf.
         :param nfeat: number of attributes that are used to get the best attribute for splitting the data.
-        :param attributes: a dictionary that specifies the attributes available to make a split.
-        Format: attributes = {0: "attribute_0", 1: "attribute_1", ...}.
-        :param rf_mode: whether the random forest mode is active. 0 means no, 1 means that the computation will be performed
-        using the random forest method. This is because in this case, we can select nfeat attributes
-        each time we are going to make a split.
         :return: Tree created using the training set.
         """
 
@@ -296,7 +291,7 @@ class Forest:
         self.classification = []
 
 
-    def grow_b(self, x: [[]], y: [], nmin: int, minleaf: int, nfeat: int, m: int, attributes: dict, rf_mode: int):
+    def grow_b(self, x: [[]], y: [], nmin: int, minleaf: int, nfeat: int, m: int):
         """
         This function let grows a Forest.
         It can be used also to let grow a Bagging.
@@ -307,11 +302,6 @@ class Forest:
         :param minleaf: minimum number of observations (elements) in order to create a leaf.
         :param nfeat: number of attributes that are used to get the best attribute for splitting the data.
         :param m: number of trees to grow in the current forest.
-        :param attributes: a dictionary that specifies the attributes available to make a split.
-        Format: attributes = {0: "attribute_0", 1: "attribute_1", ...}.
-        :param rf_mode: whether the random forest mode is active. 0 means no, 1 means that the computation will be performed
-        using the random forest method. This is because in this case, we can select nfeat attributes
-        each time we are going to make a split.
         :return: Forest created using the training set.
         """
 
@@ -324,7 +314,7 @@ class Forest:
                 new_y_data[j] = y[observation]
 
             tree = Tree()
-            tree.grow(new_x_data, new_y_data, nmin, minleaf, nfeat, attributes, rf_mode)
+            tree.grow(new_x_data, new_y_data, nmin, minleaf, nfeat)
             self.forest.append(tree)
 
             if i % 5 == 0 and i != 0:
@@ -379,7 +369,7 @@ class Forest:
 # ---------------------------------------------------------------------------------------------
 
 
-def tree_grow(x, y, nmin, minleaf, nfeat, attributes, rf_mode):
+def tree_grow(x: [[]], y: [], nmin: int, minleaf: int, nfeat: int):
     """
     This function creates a Tree object tailored for the given data.
 
@@ -388,16 +378,11 @@ def tree_grow(x, y, nmin, minleaf, nfeat, attributes, rf_mode):
     :param nmin: minimum number of observations (elements) in order to create a Node.
     :param minleaf: minimum number of observations (elements) in order to create a leaf.
     :param nfeat: number of attributes that are used to get the best attribute for splitting the data.
-    :param attributes: a dictionary that specifies the attributes available to make a split.
-    Format: attributes = {0: "attribute_0", 1: "attribute_1", ...}.
-    :param rf_mode: whether the random forest mode is active. 0 means no, 1 means that the computation will be performed
-    using the random forest method. This is because in this case, we can select nfeat attributes
-    each time we are going to make a split.
     :return: Tree created using the training set.
     """
 
     tree = Tree()
-    tree.grow(x, y, nmin, minleaf, nfeat, attributes, rf_mode)
+    tree.grow(x, y, nmin, minleaf, nfeat)
     return tree
 
 
@@ -413,7 +398,7 @@ def tree_pred(data: [[]], tree: Tree):
     return tree.classify(data)
 
 
-def tree_grow_b(x: [[]], y: [], nmin: int, minleaf: int, nfeat: int, m: int, attributes: dict, rf_mode: int):
+def tree_grow_b(x: [[]], y: [], nmin: int, minleaf: int, nfeat: int, m: int):
     """
     This function creates a Forest object tailored for the given data.
     It can be used also to let grow a Bagging.
@@ -424,17 +409,12 @@ def tree_grow_b(x: [[]], y: [], nmin: int, minleaf: int, nfeat: int, m: int, att
     :param nmin: minimum number of observations (elements) in order to create a Node.
     :param minleaf: minimum number of observations (elements) in order to create a leaf.
     :param nfeat: number of attributes that are used to get the best attribute for splitting the data.
-    :param attributes: a dictionary that specifies the attributes available to make a split.
-    Format: attributes = {0: "attribute_0", 1: "attribute_1", ...}.
-    :param rf_mode: whether the random forest mode is active. 0 means no, 1 means that the computation will be performed
-    using the random forest method. This is because in this case, we can select nfeat attributes
-    each time we are going to make a split.
     :param m: number of trees to grow in the current forest.
     :return: Forest created using the training set.
     """
 
     forest = Forest()
-    trees = forest.grow_b(x, y, nmin, minleaf, nfeat, m, attributes, rf_mode)
+    trees = forest.grow_b(x, y, nmin, minleaf, nfeat, m)
     return trees
 
 
@@ -642,7 +622,6 @@ def best_split_all_attributes(data_x: [[]], data_y: [], minleaf: int, attributes
     best_split = None
     best_attribute = None
 
-    # a split can be made only on attributes that have not yet been used!
     for i in attributes:
 
         new_split, impurity_left, impurity_right, percentage_left, percentage_right = best_split_one_attribute(data_x[:, i], data_y, minleaf)
@@ -718,7 +697,7 @@ def menu():
     print("\nPress 1 to construct and evaluate a single tree")
     print("Press 2 to construct and evaluate a random forest")
     print("Press 3 to construct and evaluate a bagging")
-    print("Press 4 to run a ttest_5x2cv to know the statistical significance between models")
+    print("Press 4 to run a McNemar test to know the statistical significance in accuracy between models")
     print("Press 5 to print the current single tree")
     print("Press 6 to change the nmin, minleaf and m parameters")
     print("Press 0 to exit")
@@ -781,6 +760,7 @@ def statistic_test(result_tree, result_forest, result_bagging, y_test):
     :param y_test: the array of true labels that should have been predicted.
     """
 
+    # McNemar wants a list of True or False based on the fact that a case has been correctly classified
     correct_tree = result_tree == y_test
     correct_random_forest = result_forest == y_test
     correct_bagging = result_bagging == y_test
@@ -875,6 +855,7 @@ def main():
     x_test, y_test = split_label(data_test, path_data_test)
 
     # get the attributes in a dictionary form (see the get_attributes_list for a better explanation)
+    global attributes
     attributes = get_attributes_list(x_train, data_train)
 
     # initialize the nmin, minleaf, m and nfeat parameters
@@ -889,13 +870,19 @@ def main():
     forest_exists = False
     bagging_exists = False
 
+    # rf_mode: whether the random forest mode is active. 0 means no, 1 means that the computation will be performed
+    # using the random forest method. This is because in this case, in the split method of a Node,
+    # we can select nfeat attributes each time we are going to make a split.
+    global rf_mode
+
     while choice != 0:
 
         if choice == 1:
             # Tree
+            rf_mode = 0
             print("\nConstructing the single tree...")
             t0 = time()
-            tree = tree_grow(x_train, y_train, nmin=nmin, minleaf=minleaf, nfeat=nfeat, attributes=attributes, rf_mode=0)
+            tree = tree_grow(x_train, y_train, nmin=nmin, minleaf=minleaf, nfeat=nfeat)
             t1 = time()
             tree_exists = True
             print("\nSingle tree has been constructed in", t1 - t0, "seconds.")
@@ -908,9 +895,10 @@ def main():
 
         if choice == 2:
             # Random Forest
+            rf_mode = 1
             print("\nConstructing the random forest...")
             t0 = time()
-            forest = tree_grow_b(x_train, y_train, nmin=nmin, minleaf=minleaf, nfeat=nfeat_forest, m=m, attributes=attributes, rf_mode=1)
+            forest = tree_grow_b(x_train, y_train, nmin=nmin, minleaf=minleaf, nfeat=nfeat_forest, m=m)
             t1 = time()
             forest_exists = True
             print("\nRandom forest has been constructed in", t1 - t0, "seconds.")
@@ -923,9 +911,10 @@ def main():
 
         if choice == 3:
             # Bagging
+            rf_mode = 0
             print("\nConstructing the bagging...")
             t0 = time()
-            bagging = tree_grow_b(x_train, y_train, nmin=nmin, minleaf=minleaf, nfeat=nfeat, m=m, attributes=attributes, rf_mode=0)
+            bagging = tree_grow_b(x_train, y_train, nmin=nmin, minleaf=minleaf, nfeat=nfeat, m=m)
             t1 = time()
             bagging_exists = True
             print("\nBagging has been constructed in", t1 - t0, "seconds.")
