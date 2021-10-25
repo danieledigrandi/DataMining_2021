@@ -6,11 +6,11 @@ TO-DO
 
 - reading and storing the data (os.walk)
 
-- data preprocessing (which type? e.g. remove sparse data, stripping punctuation etc.)
+- data preprocessing (e.g. stripping punctuation, removing stop-words, stemming, etc.)
 
 - dividing the data in training (folders 1-4, 640 cases) and test (folder 5, 160 cases)
 
-- only for naive bayes model, feature selection (use entropy)
+- only for naive bayes model, feature selection (remove sparse data, use entropy: mutual information)
 
 - setting up 4 models:
         multinomial naive bayes
@@ -46,32 +46,80 @@ Path: "/Users/danieledigrandi/Desktop/University/UU/Data Mining/DataMining_2021/
 
 """
 
-from Assignment_2.utils import notImplemented
+from Assignment_2.utils import *
 from Assignment_2.Preprocessing import *
-from Assignment_2.Data_Analysis import perform_data_analysis
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.linear_model import LogisticRegression
-from sklearn.naive_bayes import MultinomialNB
-from sklearn.ensemble import RandomForestClassifier
+from Assignment_2.Data_Analysis import *
+from Assignment_2.Feature_Selection import *
 
-from sklearn.model_selection import GridSearchCV
-
-from sklearn import metrics
 
 
 def main():
-    unigrams_train, bigrams_train, unigrams_test, bigrams_test = preprocess_data("/Users/danieledigrandi/Desktop/"
+
+    overall_unigrams_train, overall_unigrams_test, overall_bigrams_train, overall_bigrams_test, unigrams_train, bigrams_train, unigrams_test, bigrams_test = preprocess_data("/Users/danieledigrandi/Desktop/"
                                                                                  "University/UU/Data Mining/DataMining_2021/Assignment_2/data"
                                                                                  "/op_spam_v1.4/negative_polarity")
 
+    y_train, y_test = read_labels_ok("/Users/danieledigrandi/Desktop/University/UU/Data Mining/DataMining_2021/Assignment_2/data/op_spam_v1.4/negative_polarity")
+
+    # ------------------------------------------------------------------------
+    # only for naive bayes:
+    # feature selection by eliminating sparse words and with entropy (mutual information...)
 
     # thresholds for eliminating sparse words
-    unigram_threshold = 1  # to be tuned...
-    bigram_threshold = 1  # to be tuned...
 
-    unigrams_train, bigrams_train = eliminate_sparse_words(unigrams_train, bigrams_train, unigram_threshold, bigram_threshold)
+    feature_selection = False
 
-    perform_data_analysis(unigrams_train, bigrams_train)
+    if feature_selection:
+        unigrams_sparse_threshold = 1  # to be tuned...
+        bigrams_sparse_threshold = 1  # to be tuned...
+
+        not_sparsed_unigrams, not_sparsed_bigrams = eliminate_features(overall_unigrams_train, overall_bigrams_train, unigrams_sparse_threshold, bigrams_sparse_threshold)
+
+        # thresholds for eliminating words with low mutual information
+        unigrams_mi_threshold = 0  # to be tuned...
+        bigrams_mi_threshold = 0  # to be tuned...
+
+        print("Computing the unigrams mutual information...")
+        mutual_info_unigrams = mutual_information(unigrams_train, overall_unigrams_train, y_train)
+        print("Computing the bigrams mutual information...")
+        mutual_info_bigrams = mutual_information(bigrams_train, overall_bigrams_train, y_train)
+
+        mi_unigrams_bayes, mi_bigrams_bayes = eliminate_features(mutual_info_unigrams, mutual_info_bigrams, unigrams_mi_threshold, bigrams_mi_threshold)
+
+        overall_unigrams_train_bayes, overall_bigrams_train_bayes = merge_common_features(not_sparsed_unigrams, not_sparsed_bigrams, mi_unigrams_bayes, mi_bigrams_bayes)
+
+        print("Length of original unigrams dictionary:", len(overall_unigrams_train))
+        print("Length of non-sparsed unigrams dictionary:", len(not_sparsed_unigrams))
+        print("Length of the unigrams mutual-information dictionary:", len(mi_unigrams_bayes))
+        print("Length of the unigrams merged dictionary (non-sparsed & mutual-information):", len(overall_unigrams_train_bayes))
+        print("\n")
+        print("Length of original bigrams dictionary:", len(overall_bigrams_train))
+        print("Length of non-sparsed bigrams dictionary:", len(not_sparsed_bigrams))
+        print("Length of the bigrams mutual-information dictionary:", len(mi_bigrams_bayes))
+        print("Length of the bigrams merged dictionary (non-sparsed & mutual-information):", len(overall_bigrams_train_bayes))
+
+    else:
+        overall_unigrams_train_bayes = overall_unigrams_train
+        overall_bigrams_train_bayes = overall_bigrams_train
+
+    # ------------------------------------------------------------------------
+    # exploratory analysis of the data
+
+    perform_data_analysis(overall_unigrams_train, overall_bigrams_train)
+
+    if feature_selection:
+        analyse_mutual_info(mutual_info_unigrams)
+
+    # ------------------------------------------------------------------------
+    # definitive features extraction
+
+    print("Extracting the features...")
+
+    unigrams_x, bigrams_x = extract_features(unigrams_train, bigrams_train, overall_unigrams_train, overall_bigrams_train)
+    unigrams_x_bayes, bigrams_x_bayes = extract_features(unigrams_train, bigrams_train, overall_unigrams_train_bayes, overall_bigrams_train_bayes)
+
+    # ------------------------------------------------------------------------
+    # analysis with the models
 
 
 

@@ -1,12 +1,10 @@
 import os
-from Assignment_2.utils import notImplemented
-#import nltk
 from nltk.corpus import stopwords
 from nltk import word_tokenize
 from nltk.stem.porter import PorterStemmer
 
 """
-Implement the function to check if all the text are different.
+Implement the function to check if all the texts are different.
 """
 
 def preprocess_data(path):
@@ -16,6 +14,11 @@ def preprocess_data(path):
     unigrams_test = {}
     bigrams_test = {}
 
+    overall_unigrams_train = {}
+    overall_bigrams_train = {}
+    overall_unigrams_test = {}
+    overall_bigrams_test = {}
+
     test = False
     counter = 0
 
@@ -23,7 +26,7 @@ def preprocess_data(path):
 
         for file in files:
 
-            if file.endswith(".txt"):
+            if file.endswith(".txt") and file != "trainingLabels.txt" and file != "testLabels.txt":
 
                 filepath = root + '/' + file
                 local_unigrams_test = {}
@@ -35,43 +38,47 @@ def preprocess_data(path):
                     test = True
                     local_unigrams_test = get_unigrams(filepath)
                     local_bigrams_test = get_bigrams(filepath)
+                    unigrams_test[file] = local_unigrams_test
+                    bigrams_test[file] = local_bigrams_test
 
                 else:
                     local_unigrams_train = get_unigrams(filepath)
                     local_bigrams_train = get_bigrams(filepath)
+                    unigrams_train[file] = local_unigrams_train
+                    bigrams_train[file] = local_bigrams_train
 
                 # updating the dictionaries with the unigrams and bigrams of the new processed file
                 if test:
                     for key in local_unigrams_test:
-                        if key not in unigrams_test:
-                            unigrams_test[key] = local_unigrams_test[key]
+                        if key not in overall_unigrams_test:
+                            overall_unigrams_test[key] = local_unigrams_test[key]
                         else:
-                            unigrams_test[key] += local_unigrams_test[key]
+                            overall_unigrams_test[key] += local_unigrams_test[key]
 
                     for key in local_bigrams_test:
-                        if key not in bigrams_test:
-                            bigrams_test[key] = local_bigrams_test[key]
+                        if key not in overall_bigrams_test:
+                            overall_bigrams_test[key] = local_bigrams_test[key]
                         else:
-                            bigrams_test[key] += local_bigrams_test[key]
+                            overall_bigrams_test[key] += local_bigrams_test[key]
 
                 else:
                     for key in local_unigrams_train:
-                        if key not in unigrams_train:
-                            unigrams_train[key] = local_unigrams_train[key]
+                        if key not in overall_unigrams_train:
+                            overall_unigrams_train[key] = local_unigrams_train[key]
                         else:
-                            unigrams_train[key] += local_unigrams_train[key]
+                            overall_unigrams_train[key] += local_unigrams_train[key]
 
                     for key in local_bigrams_train:
-                        if key not in bigrams_train:
-                            bigrams_train[key] = local_bigrams_train[key]
+                        if key not in overall_bigrams_train:
+                            overall_bigrams_train[key] = local_bigrams_train[key]
                         else:
-                            bigrams_train[key] += local_bigrams_train[key]
+                            overall_bigrams_train[key] += local_bigrams_train[key]
 
                 test = False
                 counter += 1
                 print("Processed files:", counter, "/ 800")
 
-    return unigrams_train, bigrams_train, unigrams_test, bigrams_test
+    return overall_unigrams_train, overall_unigrams_test, overall_bigrams_train, overall_bigrams_test, unigrams_train, bigrams_train, unigrams_test, bigrams_test
 
 
 def preprocess_text(text):
@@ -142,19 +149,3 @@ def get_bigrams(filepath):
 
     return bigrams
 
-
-def eliminate_sparse_words(unigrams_train, bigrams_train, unigram_threshold, bigram_threshold):
-
-    new_unigrams_train = unigrams_train.copy()
-    new_bigrams_train = bigrams_train.copy()
-
-    # eliminate the sparse words only in the training sample
-    for word, count in unigrams_train.items():
-        if count < unigram_threshold:
-            del new_unigrams_train[word]
-
-    for words, count in bigrams_train.items():
-        if count < bigram_threshold:
-            del new_bigrams_train[words]
-
-    return new_unigrams_train, new_bigrams_train
