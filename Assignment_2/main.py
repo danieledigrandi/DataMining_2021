@@ -59,17 +59,16 @@ def main():
                                                                                  "University/UU/Data Mining/DataMining_2021/Assignment_2/data"
                                                                                  "/op_spam_v1.4/negative_polarity")
 
-    y_train, y_test = read_labels_ok("/Users/danieledigrandi/Desktop/University/UU/Data Mining/DataMining_2021/Assignment_2/data/op_spam_v1.4/negative_polarity")
+    y_train, y_test = read_labels("/Users/danieledigrandi/Desktop/University/UU/Data Mining/DataMining_2021/Assignment_2/data/op_spam_v1.4/negative_polarity")
 
     # ------------------------------------------------------------------------
     # only for naive bayes:
     # feature selection by eliminating sparse words and with entropy (mutual information...)
 
-    # thresholds for eliminating sparse words
-
     feature_selection = False
 
     if feature_selection:
+        # thresholds for eliminating sparse words
         unigrams_sparse_threshold = 1  # to be tuned...
         bigrams_sparse_threshold = 1  # to be tuned...
 
@@ -113,10 +112,15 @@ def main():
     # ------------------------------------------------------------------------
     # definitive features extraction
 
+    general_unigrams_dictionary = list(overall_unigrams_train.keys())
+    general_bigrams_dictionary = list(overall_bigrams_train.keys())
+    general_unigram_dictionary_bayes = list(overall_unigrams_train_bayes.keys())
+
     print("Extracting the features...")
 
-    unigrams_x, bigrams_x = extract_features(unigrams_train, bigrams_train, overall_unigrams_train, overall_bigrams_train)
-    unigrams_x_bayes, bigrams_x_bayes = extract_features(unigrams_train, bigrams_train, overall_unigrams_train_bayes, overall_bigrams_train_bayes)
+    unigrams_x_train, bigrams_x_train = extract_features(unigrams_train, bigrams_train, overall_unigrams_train, overall_bigrams_train)
+    unigrams_x_test, bigrams_x_test = extract_features(unigrams_test, bigrams_test, overall_unigrams_test, overall_bigrams_test)
+    unigrams_x_bayes_train, bigrams_x_bayes_train = extract_features(unigrams_train, bigrams_train, overall_unigrams_train_bayes, overall_bigrams_train_bayes)
 
     # ------------------------------------------------------------------------
     # analysis with the models

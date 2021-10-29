@@ -1,5 +1,6 @@
 import os
 import numpy as np
+from sklearn import metrics
 
 
 def notImplemented():
@@ -7,7 +8,7 @@ def notImplemented():
     print("Not implemented yet")
 
 
-def read_labels_ok(path):
+def read_labels(path):
 
     y_train = {}
     y_test = {}
@@ -72,4 +73,14 @@ def extract_features(unigrams, bigrams, overall_unigrams, overall_bigrams):
                 bigrams_x[j][i] = bigrams_values_files[j][word]
 
     return unigrams_x, bigrams_x
+
+
+def evaluation(y_test, y_pred):
+
+    print("Accuracy:", metrics.accuracy_score(y_test, y_pred)),
+    print("All information of each label:"),
+    print(metrics.classification_report(y_test, y_pred)),
+
+    print("Confusion Matrix: \n"),
+    print(metrics.confusion_matrix(y_test, y_pred))
 
