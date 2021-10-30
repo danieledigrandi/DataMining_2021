@@ -50,6 +50,7 @@ from Assignment_2.utils import *
 from Assignment_2.Preprocessing import *
 from Assignment_2.Data_Analysis import *
 from Assignment_2.Feature_Selection import *
+from Assignment_2.ML_Algorithms import *
 
 
 
@@ -125,6 +126,7 @@ def main():
     # ------------------------------------------------------------------------
     # analysis with the models
 
+    logistic_regression_tuning(unigrams_x_train, y_train)
 
 
 
