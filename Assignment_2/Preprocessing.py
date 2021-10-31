@@ -3,9 +3,6 @@ from nltk.corpus import stopwords
 from nltk import word_tokenize
 from nltk.stem.porter import PorterStemmer
 
-"""
-Implement the function to check if all the texts are different.
-"""
 
 def preprocess_data(path):
 

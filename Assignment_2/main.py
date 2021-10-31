@@ -84,6 +84,9 @@ def main():
         print("Computing the bigrams mutual information...")
         mutual_info_bigrams = mutual_information(bigrams_train, overall_bigrams_train, y_train)
 
+        most_frequent(mutual_info_unigrams)
+        most_frequent(mutual_info_bigrams)
+
         mi_unigrams_bayes, mi_bigrams_bayes = eliminate_features(mutual_info_unigrams, mutual_info_bigrams, unigrams_mi_threshold, bigrams_mi_threshold)
 
         overall_unigrams_train_bayes, overall_bigrams_train_bayes = merge_common_features(not_sparsed_unigrams, not_sparsed_bigrams, mi_unigrams_bayes, mi_bigrams_bayes)
@@ -105,10 +108,8 @@ def main():
     # ------------------------------------------------------------------------
     # exploratory analysis of the data
 
-    perform_data_analysis(overall_unigrams_train, overall_bigrams_train)
-
-    if feature_selection:
-        analyse_mutual_info(mutual_info_unigrams)
+    #perform_data_analysis(overall_unigrams_train)
+    perform_data_analysis(overall_bigrams_train)
 
     # ------------------------------------------------------------------------
     # definitive features extraction
@@ -116,17 +117,20 @@ def main():
     general_unigrams_dictionary = list(overall_unigrams_train.keys())
     general_bigrams_dictionary = list(overall_bigrams_train.keys())
     general_unigram_dictionary_bayes = list(overall_unigrams_train_bayes.keys())
+    general_bigrams_dictionary_bayes = list(overall_bigrams_train_bayes.keys())
 
     print("Extracting the features...")
 
-    unigrams_x_train, bigrams_x_train = extract_features(unigrams_train, bigrams_train, overall_unigrams_train, overall_bigrams_train)
-    unigrams_x_test, bigrams_x_test = extract_features(unigrams_test, bigrams_test, overall_unigrams_test, overall_bigrams_test)
-    unigrams_x_bayes_train, bigrams_x_bayes_train = extract_features(unigrams_train, bigrams_train, overall_unigrams_train_bayes, overall_bigrams_train_bayes)
+    unigrams_x_train, bigrams_x_train = extract_features_train(unigrams_train, bigrams_train, overall_unigrams_train, overall_bigrams_train)
+    unigrams_x_test, bigrams_x_test = extract_features_test(unigrams_test, bigrams_test, general_unigrams_dictionary, general_bigrams_dictionary)
+
+    unigrams_x_bayes_train, bigrams_x_bayes_train = extract_features_train(unigrams_train, bigrams_train, overall_unigrams_train_bayes, overall_bigrams_train_bayes)
+    unigrams_x_bayes_test, bigrams_x_bayes_test = extract_features_test(unigrams_test, bigrams_test, general_unigram_dictionary_bayes, general_bigrams_dictionary_bayes)
 
     # ------------------------------------------------------------------------
     # analysis with the models
 
-    logistic_regression_tuning(unigrams_x_train, y_train)
+    random_forest_tuning(unigrams_x_train, y_train, unigrams_x_test, y_test)
 
 
 

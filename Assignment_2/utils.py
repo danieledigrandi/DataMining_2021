@@ -44,10 +44,10 @@ def read_labels(path):
     return y_train_np, y_test_np
 
 
-def extract_features(unigrams, bigrams, overall_unigrams, overall_bigrams):
+def extract_features_train(unigrams, bigrams, overall_unigrams, overall_bigrams):
 
     unigrams_x = np.zeros((len(unigrams), len(overall_unigrams)))
-    bigrams_x = np.zeros((len(bigrams), len(overall_bigrams)))
+    bigrams_x = np.zeros((len(bigrams), len(overall_bigrams) + len(overall_unigrams)))
 
     unigrams_words = list(overall_unigrams.keys())
     unigrams_values_files = list(unigrams.values())
@@ -63,6 +63,7 @@ def extract_features(unigrams, bigrams, overall_unigrams, overall_bigrams):
 
             if word in unigrams_values_files[j]:
                 unigrams_x[j][i] = unigrams_values_files[j][word]
+                bigrams_x[j][i] = unigrams_values_files[j][word]
 
     for i in range(len(bigrams_words)):
         for j in range(len(bigrams_values_files)):
@@ -70,7 +71,36 @@ def extract_features(unigrams, bigrams, overall_unigrams, overall_bigrams):
             word = bigrams_words[i]
 
             if word in bigrams_values_files[j]:
-                bigrams_x[j][i] = bigrams_values_files[j][word]
+                bigrams_x[j][len(unigrams_words)+i] = bigrams_values_files[j][word]
+
+    return unigrams_x, bigrams_x
+
+
+def extract_features_test(unigrams, bigrams, general_unigrams_dictionary, general_bigrams_dictionary):
+
+    unigrams_x = np.zeros((len(unigrams), len(general_unigrams_dictionary)))
+    bigrams_x = np.zeros((len(bigrams), len(general_unigrams_dictionary) + len(general_bigrams_dictionary)))
+
+    unigrams_values_files = list(unigrams.values())
+
+    bigrams_values_files = list(bigrams.values())
+
+    for i in range(len(general_unigrams_dictionary)):
+        for j in range(len(unigrams_values_files)):
+
+            word = general_unigrams_dictionary[i]
+
+            if word in unigrams_values_files[j]:
+                unigrams_x[j][i] = unigrams_values_files[j][word]
+                bigrams_x[j][i] = unigrams_values_files[j][word]
+
+    for i in range(len(general_bigrams_dictionary)):
+        for j in range(len(bigrams_values_files)):
+
+            word = general_bigrams_dictionary[i]
+
+            if word in bigrams_values_files[j]:
+                bigrams_x[j][len(general_unigrams_dictionary)+i] = bigrams_values_files[j][word]
 
     return unigrams_x, bigrams_x
 

@@ -3,6 +3,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import cross_val_score, GridSearchCV
+from sklearn.svm import l1_min_c
 from Assignment_2.utils import evaluation
 import numpy as np
 import matplotlib.pyplot as plt
@@ -13,7 +14,8 @@ def logistic_regression_tuning(X_train, y_train):
 
     lambda_scores = []
     lambda_number_of_remained_features = []
-    C_range = [0.0001, 0.001, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1, 1.1, 1.2, 1.3, 1.4, 1.6, 1.8, 2, 3, 4, 5, 6, 7, 8, 9, 10, 25, 50, 100, 120, 160, 200, 220, 260, 300, 320, 360, 400, 420, 460, 500, 520, 560, 600, 1000, 1500, 2000, 3000, 4000]
+    C_range = l1_min_c(X_train, y_train, loss="log") * np.logspace(0, 7, 16)  # formula taken here: https://scikit-learn.org/stable/auto_examples/linear_model/plot_logistic_path.html#sphx-glr-auto-examples-linear-model-plot-logistic-path-py
+    # C_range = [0.0001, 0.001, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1, 1.1, 1.2, 1.3, 1.4, 1.6, 1.8, 2, 3, 4, 5, 6, 7, 8, 9, 10, 25, 50, 100, 120, 160, 200, 220, 260, 300, 320, 360, 400, 420, 460, 500, 520, 560, 600, 1000, 1500, 2000, 3000, 4000]
 
     for C in C_range:
         print('Testing C:', C, "(lambda:", str(1/C) + ")")
@@ -56,75 +58,65 @@ def logistic_regression_tuning(X_train, y_train):
     df.to_csv(filename, index=False)
 
 
-def plot_CV_graph(parameter_range, remained_features_range, accuracy_range, mode):
+def single_tree_tuning(X_train, y_train, plot_impurity=False):
+
+    # approach partially based on: https://scikit-learn.org/stable/auto_examples/tree/plot_cost_complexity_pruning.html#sphx-glr-auto-examples-tree-plot-cost-complexity-pruning-py
+
+    alpha_scores = []
+    node_counts = []
+    depth = []
+    n_leafs = []
+
+    model = DecisionTreeClassifier(random_state=0, criterion='gini', splitter='best')
+    path = model.cost_complexity_pruning_path(X_train, y_train)
+
     """
-    :param mode: 'LR' for logistic regression and 'ST' for single tree.
-    For naive bayes and random forest, we cannot plot a 2D graph since for each model we have a combination of
-    2 parameters that have to change together and therefore be tuned. The result would be a 3D graph.
-    :return:
+    Minimal cost complexity pruning recursively finds the node with the “weakest link”. 
+    The weakest link is characterized by an effective alpha, where the nodes with the smallest effective alpha are pruned first. 
+    To get an idea of what values of ccp_alpha could be appropriate, scikit-learn provides DecisionTreeClassifier.cost_complexity_pruning_path 
+    that returns the effective alphas and the corresponding total leaf impurities at each step of the pruning process. 
+    As alpha increases, more of the tree is pruned, which increases the total impurity of its leaves.
     """
 
-    fig = plt.figure()
-    ax1 = fig.add_subplot(111)
-    ax1.set_xticks(parameter_range)
-    ax1.set_yticks(accuracy_range)
-    ax1.set_xticklabels(parameter_range, fontsize=8, rotation=90)
-    ax1.plot(parameter_range, accuracy_range)
+    ccp_alphas, impurities = path.ccp_alphas, path.impurities
 
-    ax2 = ax1.twiny()
-    ax2.set_xlim(ax1.get_xlim())
-    ax2.set_xticks(parameter_range)
-    ax2.set_xticklabels(remained_features_range, fontsize=8, rotation=90)
+    if plot_impurity:
+        fig, ax = plt.subplots()
+        ax.plot(ccp_alphas[:-1], impurities[:-1], drawstyle="steps-post")
+        ax.set_xlabel("Effective alpha")
+        ax.set_ylabel("Total impurity of leaves")
+        ax.set_title("Total Impurity vs effective alpha for training set (unigrams, ST)")
+        plt.show()
 
-    if mode == 'LR':
-        ax1.set_xlabel('Value of LN(lambda) for Logistic Regression model with LASSO penalty')
-        ax2.set_xlabel('Number of remained features')
-        ax1.set_ylabel('Cross-Validated Accuracy')
-        plt.title("Cross-validation: tuning lambda for Logistic Regression")
+    for alpha in ccp_alphas:
+        print('Testing alpha:', alpha)
+        model = DecisionTreeClassifier(random_state=0, criterion='gini', splitter='best', ccp_alpha=alpha)
+        scores = cross_val_score(model, X_train, y_train, cv=10, scoring='accuracy')
+        alpha_scores.append(scores.mean())
 
-    if mode == 'ST':
-        ax1.set_xlabel('Value of Complexity Pruning alpha for Single Tree model')
-        ax2.set_xlabel('Number of remained features')
-        ax1.set_ylabel('Cross-Validated Accuracy')
-        plt.title("Cross-validation: tuning alpha for Single Tree")
+        model = DecisionTreeClassifier(random_state=0, criterion='gini', splitter='best', ccp_alpha=alpha).fit(X_train, y_train)
 
-    plt.tight_layout()
-    plt.show()
+        node_counts.append(model.tree_.node_count)
+        depth.append(model.tree_.max_depth)
+        n_leafs.append(model.tree_.n_leaves)
 
+    print('Range of alpha:', ccp_alphas)
+    print('Accuracies:', alpha_scores)
+    print('Depth:', depth)
+    print('Node counts:', node_counts)
+    print('Leaf counts:', n_leafs)
 
-def prova():
+    df = pd.DataFrame()
 
-    C_range = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1, 1.1, 1.2, 1.3, 1.4, 1.6, 1.8, 2, 3, 4, 5, 6, 7, 8, 9, 10, 25, 50, 100, 120, 160, 200, 220, 260, 300, 320, 360, 400, 420, 460, 500, 520, 560, 600, 1000, 1500, 2000, 3000, 4000]
-    la = [np.log(1 / i) for i in C_range]
-    lambda_range = [int(np.log(1/i)*1000)/1000 for i in C_range]
-    print(la)
-    print(lambda_range)
-    lambda_scores = [i for i in range(48)]
-    lambda_number_of_remained_features = [i for i in range(48)]
+    df['Range_of_alpha'] = ccp_alphas
+    df['Accuracies'] = alpha_scores
+    df['Depth'] = depth
+    df['Node counts'] = node_counts
+    df['Leaf counts'] = n_leafs
 
-    fig = plt.figure(figsize=(24, 14), dpi=120)
-    ax1 = fig.add_subplot(111)
-    ax1.set_xticks(lambda_range)
-    ax1.set_yticks(lambda_scores)
-    ax1.set_xticklabels(lambda_range, fontsize=6, rotation=90)
-    ax1.plot(lambda_range, lambda_scores)
+    filename = 'Single_tree_CV.csv'
 
-    ax2 = ax1.twiny()
-    ax2.set_xlim(ax1.get_xlim())
-    ax2.set_xticks(lambda_range)
-    ax2.set_xticklabels(lambda_number_of_remained_features, fontsize=6, rotation=90)
-
-    ax1.set_xlabel('Value of LN(lambda) for Logistic Regression model with LASSO penalty')
-    ax2.set_xlabel('Number of remained features')
-    ax1.set_ylabel('Cross-Validated Accuracy')
-    plt.title("Cross-validation: tuning lambda for Logistic Regression")
-
-    plt.tight_layout()
-    plt.show()
-
-
-
-
+    df.to_csv(filename, index=False)
 
 
 # Multinomial naive bayes
@@ -143,72 +135,27 @@ def multinomial_bayes(x_train, y_train, x_test, y_test):
     evaluation(y_test, y_pred)
 
 
-# Logistic Regression
-def logistic_regression(x_train, y_train, x_test, y_test):
-    parameters = {
-        "penalty": ('l1', 'l2', 'elasticnet', None),
-        "dual": (True, False),
-        "tol": [0.00005, 0.0001, 0.0002],
-        "C": [0.9, 1.0, 1.1], # this
-        "fit_intercept": (True, False),
-        "solver": ('newton - cg', 'lbfgs', 'liblinear', 'sag', 'saga')
-    }
-    # Train the model
-    clf = LogisticRegression()#max_iter=1000000)
-    grid = GridSearchCV(clf, parameters)
-    grid_fit = grid.fit(x_train, y_train)
-    print(grid_fit.get_params())
-    print()
-    print(grid_fit.best_estimator_.coef_())
-    # Testing the model
-    y_pred = grid_fit.predict(x_test)
-
-    evaluation(y_test, y_pred)
-
-
-# Decision tree
-def decision_tree(x_train, y_train, x_test, y_test):
-    parameters = {
-        "criterion":  ('gini', 'entropy'),
-        "splitter": ("best", "random"),
-        "min_samples_split": [2, 3, 4],
-        "min_samples_leaf": [1, 2, 3],
-        "max_features": ("auto", "sqrt", "log2", None),
-        "min_impurity_decrease": [0, 0.1, 0.2],
-        "ccp_alpha": [0, 0.1, 0.2] # this
-    }
-    clf = DecisionTreeClassifier()
-    grid = GridSearchCV(clf, parameters)
-    # Train Decision Tree Classifer
-    grid_fit = grid.fit(x_train, y_train)
-
-    print(grid_fit.cv_results_)
-    # Predict the response for test dataset
-    y_pred = grid_fit.best_estimator_.predict(x_test)
-
-    evaluation(y_test, y_pred)
-
-
 # Random forest
-def random_forest(x_train, y_train, x_test, y_test):
+def random_forest_tuning(X_train, y_train, X_test, y_test):
+
+    temp = DecisionTreeClassifier(random_state=0, criterion='gini', splitter='best')
+    path = temp.cost_complexity_pruning_path(X_train, y_train)
+
     parameters = {
-        "n_estimators": [10, 25, 100], # this
-        "criterion": ('gini', 'entropy'),
-        "splitter": ("best", "random"),
-        "min_samples_split": [2, 3, 4],
-        "min_samples_leaf": [1, 2, 3],
-        "max_features": ("auto", "sqrt", "log2", None),
-        "min_impurity_decrease": [0, 0.1, 0.2],
-        "bootstrap": (True, False),
-        "max_sample": [None, 50, 100, 250, 0.5, 0.9, 0.2] # this
+        "n_estimators": [30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130],  # m
+        "max_features": ["sqrt", "log2", 0.2, 0.4, 0.6, 0.8],  # nfeat
+        "max_samples": [None, 0.2, 0.4, 0.6, 0.8],
+        "ccp_alpha": path.ccp_alphas
     }
-    clf = RandomForestClassifier()
-    grid = GridSearchCV(clf, parameters)
-    grid_fit = grid.fit(x_train, y_train)
+
+    model = RandomForestClassifier(random_state=0, criterion='gini', bootstrap=True)
+    grid = GridSearchCV(model, parameters)
+    grid_fit = grid.fit(X_train, y_train)
     print(grid_fit.best_estimator_.get_params())
     print()
     print(grid_fit)
 
-    y_pred = grid_fit.predict(x_test)
+    y_pred = grid_fit.predict(X_train)
 
-    evaluation(y_test, y_pred)
+    evaluation(y_train, y_pred)
+
