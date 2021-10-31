@@ -1,22 +1,17 @@
 import numpy as np
 
 
-def eliminate_features(unigrams, bigrams, unigrams_threshold, bigrams_threshold):
+def eliminate_features(data, data_threshold):
 
-    new_unigrams = unigrams.copy()
-    new_bigrams = bigrams.copy()
+    new_data = data.copy()
 
     # eliminate the features only in the training sample
 
-    for word, value in unigrams.items():
-        if value < unigrams_threshold:
-            del new_unigrams[word]
+    for word, value in data.items():
+        if value < data_threshold:
+            del new_data[word]
 
-    for words, value in bigrams.items():
-        if value < bigrams_threshold:
-            del new_bigrams[words]
-
-    return new_unigrams, new_bigrams
+    return new_data
 
 
 def mutual_information(feature_dictionary, overall_feature_dictionary, label):
@@ -81,17 +76,12 @@ def mutual_information(feature_dictionary, overall_feature_dictionary, label):
     return mutual_info
 
 
-def merge_common_features(not_sparsed_unigrams, not_sparsed_bigrams, mi_unigrams_bayes, mi_bigrams_bayes):
+def merge_common_features(not_sparsed, mi_bayes):
 
-    overall_unigrams_train_bayes = {}
-    overall_bigrams_train_bayes = {}
+    overall_train_bayes = {}
 
-    for key, value in not_sparsed_unigrams.items():
-        if key in mi_unigrams_bayes:
-            overall_unigrams_train_bayes[key] = value
+    for key, value in not_sparsed.items():
+        if key in mi_bayes:
+            overall_train_bayes[key] = value
 
-    for key, value in not_sparsed_bigrams.items():
-        if key in mi_bigrams_bayes:
-            overall_bigrams_train_bayes[key] = value
-
-    return overall_unigrams_train_bayes, overall_bigrams_train_bayes
+    return overall_train_bayes

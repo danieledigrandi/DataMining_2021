@@ -22,9 +22,7 @@ def perform_data_analysis(data):
     print(present_twice)
 
 
-def most_frequent(data):
-
-    values_to_print = 20
+def most_frequent(data, values_to_print=20):
 
     k = Counter(data)
     high = k.most_common(values_to_print)

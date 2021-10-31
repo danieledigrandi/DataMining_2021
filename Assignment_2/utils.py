@@ -55,7 +55,6 @@ def extract_features_train(unigrams, bigrams, overall_unigrams, overall_bigrams)
     bigrams_words = list(overall_bigrams.keys())
     bigrams_values_files = list(bigrams.values())
 
-
     for i in range(len(unigrams_words)):
         for j in range(len(unigrams_values_files)):
 
@@ -113,4 +112,42 @@ def evaluation(y_test, y_pred):
 
     print("Confusion Matrix: \n"),
     print(metrics.confusion_matrix(y_test, y_pred))
+
+
+def get_best_params(mode):
+
+    if mode == 'NB':
+
+        unigrams_sparse_threshold = 10
+        unigrams_mutual_threshold = 0.0015
+
+        bigrams_sparse_threshold = 1
+        bigrams_mutual_threshold = 0.005
+
+        return unigrams_sparse_threshold, unigrams_mutual_threshold, bigrams_sparse_threshold, bigrams_mutual_threshold
+
+    elif mode == 'ST':
+
+        alpha_unigrams = 0.01
+        alpha_bigrams = 0.008
+
+        return alpha_unigrams, alpha_bigrams
+
+    elif mode == 'LR':
+
+        c_unigrams = 1.3
+        c_bigrams = 0.7
+
+        return c_unigrams, c_bigrams
+
+    elif mode == 'RF':
+
+        m_unigrams = 130
+        nfeat_unigrams = "sqrt"
+
+        m_bigrams = 130
+        nfeat_bigrams = "sqrt"
+
+        return m_unigrams, m_bigrams, nfeat_unigrams, nfeat_bigrams
+
 

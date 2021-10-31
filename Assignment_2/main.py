@@ -1,6 +1,5 @@
 # Data mining project 2021 - assignment 2
 
-
 """
 TO-DO
 
@@ -20,7 +19,7 @@ TO-DO
 
 - for each model, make a unigram and bigram version
 
-- 10 folds cross validation (or out-of-bag validation, for random forest) for parameter tuning, parameters to tune:
+- 10 folds cross validation (or out-of-bag validation, for random forest) for parameter tuning, minimal parameters to tune:
         multinomial naive bayes --> number of features k that have to be selected
         regularized logistic regression --> lambda
         classification tree --> cost-complexity pruning parameter alpha
@@ -68,48 +67,41 @@ def main():
 
     feature_selection = False
 
+    print("Extracting the features...")
+
     if feature_selection:
-        # thresholds for eliminating sparse words
-        unigrams_sparse_threshold = 1  # to be tuned...
-        bigrams_sparse_threshold = 1  # to be tuned...
 
-        not_sparsed_unigrams, not_sparsed_bigrams = eliminate_features(overall_unigrams_train, overall_bigrams_train, unigrams_sparse_threshold, bigrams_sparse_threshold)
-
-        # thresholds for eliminating words with low mutual information
-        unigrams_mi_threshold = 0  # to be tuned...
-        bigrams_mi_threshold = 0  # to be tuned...
-
-        print("Computing the unigrams mutual information...")
-        mutual_info_unigrams = mutual_information(unigrams_train, overall_unigrams_train, y_train)
-        print("Computing the bigrams mutual information...")
-        mutual_info_bigrams = mutual_information(bigrams_train, overall_bigrams_train, y_train)
-
-        most_frequent(mutual_info_unigrams)
-        most_frequent(mutual_info_bigrams)
-
-        mi_unigrams_bayes, mi_bigrams_bayes = eliminate_features(mutual_info_unigrams, mutual_info_bigrams, unigrams_mi_threshold, bigrams_mi_threshold)
-
-        overall_unigrams_train_bayes, overall_bigrams_train_bayes = merge_common_features(not_sparsed_unigrams, not_sparsed_bigrams, mi_unigrams_bayes, mi_bigrams_bayes)
-
-        print("Length of original unigrams dictionary:", len(overall_unigrams_train))
-        print("Length of non-sparsed unigrams dictionary:", len(not_sparsed_unigrams))
-        print("Length of the unigrams mutual-information dictionary:", len(mi_unigrams_bayes))
-        print("Length of the unigrams merged dictionary (non-sparsed & mutual-information):", len(overall_unigrams_train_bayes))
-        print("\n")
-        print("Length of original bigrams dictionary:", len(overall_bigrams_train))
-        print("Length of non-sparsed bigrams dictionary:", len(not_sparsed_bigrams))
-        print("Length of the bigrams mutual-information dictionary:", len(mi_bigrams_bayes))
-        print("Length of the bigrams merged dictionary (non-sparsed & mutual-information):", len(overall_bigrams_train_bayes))
+        multinomial_bayes_tuning(unigrams_train, bigrams_train, overall_unigrams_train, overall_bigrams_train, y_train)
+        exit()
 
     else:
-        overall_unigrams_train_bayes = overall_unigrams_train
-        overall_bigrams_train_bayes = overall_bigrams_train
+
+        unigrams_sparse_threshold, unigrams_mutual_threshold, bigrams_sparse_threshold, bigrams_mutual_threshold = get_best_params('NB')
+
+        not_sparsed_unigrams = eliminate_features(overall_unigrams_train, unigrams_sparse_threshold)
+        not_sparsed_bigrams = eliminate_features(overall_bigrams_train, bigrams_sparse_threshold)
+
+        mutual_info_unigrams = mutual_information(unigrams_train, overall_unigrams_train, y_train)
+        mi_unigrams_bayes = eliminate_features(mutual_info_unigrams, unigrams_mutual_threshold)
+
+        mutual_info_bigrams = mutual_information(bigrams_train, overall_bigrams_train, y_train)
+        mi_bigrams_bayes = eliminate_features(mutual_info_bigrams, bigrams_mutual_threshold)
+
+        overall_unigrams_train_bayes = merge_common_features(not_sparsed_unigrams, mi_unigrams_bayes)
+        overall_bigrams_train_bayes = merge_common_features(not_sparsed_bigrams, mi_bigrams_bayes)
 
     # ------------------------------------------------------------------------
     # exploratory analysis of the data
 
-    #perform_data_analysis(overall_unigrams_train)
-    perform_data_analysis(overall_bigrams_train)
+    # perform_data_analysis(overall_unigrams_train)
+
+    # perform_data_analysis(overall_bigrams_train)
+
+    # most_frequent(mutual_info_unigrams, values_to_print=20)
+    # most_frequent(overall_unigrams_train, values_to_print=20)
+
+    # most_frequent(mutual_info_bigrams, values_to_print=20)
+    # most_frequent(overall_bigrams_train, values_to_print=20)
 
     # ------------------------------------------------------------------------
     # definitive features extraction
@@ -118,8 +110,6 @@ def main():
     general_bigrams_dictionary = list(overall_bigrams_train.keys())
     general_unigram_dictionary_bayes = list(overall_unigrams_train_bayes.keys())
     general_bigrams_dictionary_bayes = list(overall_bigrams_train_bayes.keys())
-
-    print("Extracting the features...")
 
     unigrams_x_train, bigrams_x_train = extract_features_train(unigrams_train, bigrams_train, overall_unigrams_train, overall_bigrams_train)
     unigrams_x_test, bigrams_x_test = extract_features_test(unigrams_test, bigrams_test, general_unigrams_dictionary, general_bigrams_dictionary)
@@ -130,8 +120,61 @@ def main():
     # ------------------------------------------------------------------------
     # analysis with the models
 
-    random_forest_tuning(unigrams_x_train, y_train, unigrams_x_test, y_test)
+    alpha_st_unigrams, alpha_st_bigrams = get_best_params('ST')
+    c_unigrams, c_bigrams = get_best_params('LR')
+    m_unigrams, m_bigrams, nfeat_unigrams, nfeat_bigrams = get_best_params('RF')
 
+
+    # unigrams
+    single_tree = DecisionTreeClassifier(random_state=0, criterion='gini', splitter='best', ccp_alpha=alpha_st_unigrams)
+    single_tree.fit(unigrams_x_train, y_train)
+    y_st_unigrams_pred = single_tree.predict(unigrams_x_test)
+    print("\nUNIGRAMS - ST")
+    evaluation(y_test, y_st_unigrams_pred)
+
+    logistic = LogisticRegression(random_state=0, multi_class='multinomial', penalty='l1', solver='saga', C=c_unigrams)
+    logistic.fit(unigrams_x_train, y_train)
+    y_logistic_unigrams_pred = logistic.predict(unigrams_x_test)
+    print("\nUNIGRAMS - LR")
+    evaluation(y_test, y_logistic_unigrams_pred)
+
+    random_forest = RandomForestClassifier(random_state=0, criterion='gini', bootstrap=True, n_estimators=m_unigrams, max_features=nfeat_unigrams)
+    random_forest.fit(unigrams_x_train, y_train)
+    y_rf_unigrams_pred = random_forest.predict(unigrams_x_test)
+    print("\nUNIGRAMS - RF")
+    evaluation(y_test, y_rf_unigrams_pred)
+
+    naive_bayes = MultinomialNB()
+    naive_bayes.fit(unigrams_x_bayes_train, y_train)
+    y_nb_unigrams_pred = naive_bayes.predict(unigrams_x_bayes_test)
+    print("\nUNIGRAMS - NB")
+    evaluation(y_test, y_nb_unigrams_pred)
+
+
+    # bigrams
+    single_tree = DecisionTreeClassifier(random_state=0, criterion='gini', splitter='best', ccp_alpha=alpha_st_bigrams)
+    single_tree.fit(bigrams_x_train, y_train)
+    y_st_bigrams_pred = single_tree.predict(bigrams_x_test)
+    print("\nBIGRAMS - ST")
+    evaluation(y_test, y_st_bigrams_pred)
+
+    logistic = LogisticRegression(random_state=0, multi_class='multinomial', penalty='l1', solver='saga', C=c_bigrams)
+    logistic.fit(bigrams_x_train, y_train)
+    y_logistic_bigrams_pred = logistic.predict(bigrams_x_test)
+    print("\nBIGRAMS - LR")
+    evaluation(y_test, y_logistic_bigrams_pred)
+
+    random_forest = RandomForestClassifier(random_state=0, criterion='gini', bootstrap=True, n_estimators=m_bigrams, max_features=nfeat_bigrams)
+    random_forest.fit(bigrams_x_train, y_train)
+    y_rf_bigrams_pred = random_forest.predict(bigrams_x_test)
+    print("\nBIGRAMS - RF")
+    evaluation(y_test, y_rf_bigrams_pred)
+
+    naive_bayes = MultinomialNB()
+    naive_bayes.fit(bigrams_x_bayes_train, y_train)
+    y_nb_bigrams_pred = naive_bayes.predict(bigrams_x_bayes_test)
+    print("\nBIGRAMS - NB")
+    evaluation(y_test, y_nb_bigrams_pred)
 
 
 if __name__ == '__main__':

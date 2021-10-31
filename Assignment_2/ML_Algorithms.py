@@ -4,7 +4,8 @@ from sklearn.naive_bayes import MultinomialNB
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import cross_val_score, GridSearchCV
 from sklearn.svm import l1_min_c
-from Assignment_2.utils import evaluation
+from Assignment_2.utils import *
+from Assignment_2.Feature_Selection import *
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -120,32 +121,85 @@ def single_tree_tuning(X_train, y_train, plot_impurity=False):
 
 
 # Multinomial naive bayes
-def multinomial_bayes(x_train, y_train, x_test, y_test):
-    parameters = {
-        "alpha": [0.8, 0.9, 1.0, 1.1, 1.2],
-        "fit_prior": (True, False),
-    }
-    clf = MultinomialNB()
-    grid = GridSearchCV(clf, parameters)
-    grid_fit = grid.fit(x_train, y_train)
-    print(grid_fit.get_params())
+def multinomial_bayes_tuning(unigrams_train, bigrams_train, overall_unigrams_train, overall_bigrams_train, y_train):
 
-    y_pred = grid_fit.predict(x_test)
+    # thresholds for eliminating sparse words
+    unigrams_sparse_threshold = [1, 2, 6, 10, 15, 20, 30, 50, 60, 80, 100, 200, 300]
+    bigrams_sparse_threshold = [1, 2, 3, 4, 5, 6, 8, 10, 15, 20, 30, 50, 70, 100]
 
-    evaluation(y_test, y_pred)
+    # thresholds for eliminating words with low mutual information
+    unigrams_mi_threshold = [0, 0.0001, 0.0004, 0.001, 0.0015, 0.002, 0.004, 0.01, 0.02, 0.04]
+    bigrams_mi_threshold = [0, 0.0003, 0.001, 0.0014, 0.0016, 0.005, 0.01, 0.013, 0.015, 0.02]
+
+    df_unigrams = pd.DataFrame(columns=['t_sparse', 't_mutual', 'length_original_dictionary', 'length_after_sparse', 'length_after_mutual', 'length_merged', 'accuracy'])
+    df_bigrams = pd.DataFrame(columns=['t_sparse', 't_mutual', 'length_original_dictionary', 'length_after_sparse', 'length_after_mutual', 'length_merged', 'length_unigrams', 'tot_bigrams_feature', 'accuracy'])
+
+
+    # unigrams tuning
+    for ts in unigrams_sparse_threshold:
+        not_sparsed_unigrams = eliminate_features(overall_unigrams_train, ts)
+
+        for tmi in unigrams_mi_threshold:
+
+            print('UNIGRAMS - Testing sparse:', ts, "and mutual information:", tmi)
+            mutual_info_unigrams = mutual_information(unigrams_train, overall_unigrams_train, y_train)
+            mi_unigrams_bayes = eliminate_features(mutual_info_unigrams, tmi)
+
+            overall_unigrams_train_bayes = merge_common_features(not_sparsed_unigrams, mi_unigrams_bayes)
+
+            unigrams_x_bayes_train, bigrams_x_useless = extract_features_train(unigrams_train, bigrams_train, overall_unigrams_train_bayes, overall_bigrams_train)
+
+            model = MultinomialNB()
+            scores = cross_val_score(model, unigrams_x_bayes_train, y_train, cv=10, scoring='accuracy')
+            accuracy = scores.mean()
+
+            row = {'t_sparse': ts, 't_mutual': tmi, 'length_original_dictionary': len(overall_unigrams_train), 'length_after_sparse': len(not_sparsed_unigrams), 'length_after_mutual': len(mi_unigrams_bayes), 'length_merged': len(overall_unigrams_train_bayes), 'accuracy': accuracy}
+
+            df_unigrams = df_unigrams.append(row, ignore_index=True)
+
+    filename = 'Unigrams_MNB_CV.csv'
+
+    df_unigrams.to_csv(filename, index=False)
+
+
+    # bigrams tuning
+    for ts in bigrams_sparse_threshold:
+        not_sparsed_unigrams = eliminate_features(overall_unigrams_train, ts)
+        not_sparsed_bigrams = eliminate_features(overall_bigrams_train, ts)
+
+        for tmi in bigrams_mi_threshold:
+
+            print('BIGRAMS - Testing sparse:', ts, "and mutual information:", tmi)
+            mutual_info_unigrams = mutual_information(unigrams_train, overall_unigrams_train, y_train)
+            mi_unigrams_bayes = eliminate_features(mutual_info_unigrams, tmi)
+
+            mutual_info_bigrams = mutual_information(bigrams_train, overall_bigrams_train, y_train)
+            mi_bigrams_bayes = eliminate_features(mutual_info_bigrams, tmi)
+
+            overall_unigrams_train_bayes = merge_common_features(not_sparsed_unigrams, mi_unigrams_bayes)
+            overall_bigrams_train_bayes = merge_common_features(not_sparsed_bigrams, mi_bigrams_bayes)
+
+            unigrams_x_bayes_train, bigrams_x_bayes_train = extract_features_train(unigrams_train, bigrams_train, overall_unigrams_train_bayes, overall_bigrams_train_bayes)
+
+            model = MultinomialNB()
+            scores = cross_val_score(model, bigrams_x_bayes_train, y_train, cv=10, scoring='accuracy')
+            accuracy = scores.mean()
+
+            row = {'t_sparse': ts, 't_mutual': tmi, 'length_original_dictionary': len(overall_bigrams_train), 'length_after_sparse': len(not_sparsed_bigrams), 'length_after_mutual': len(mi_bigrams_bayes), 'length_merged': len(overall_bigrams_train_bayes), 'length_unigrams': len(overall_unigrams_train_bayes), 'tot_bigrams_feature': len(overall_bigrams_train_bayes) + len(overall_unigrams_train_bayes), 'accuracy': accuracy}
+
+            df_bigrams = df_bigrams.append(row, ignore_index=True)
+
+    filename = 'Bigrams_MNB_CV.csv'
+
+    df_bigrams.to_csv(filename, index=False)
 
 
 # Random forest
 def random_forest_tuning(X_train, y_train, X_test, y_test):
 
-    temp = DecisionTreeClassifier(random_state=0, criterion='gini', splitter='best')
-    path = temp.cost_complexity_pruning_path(X_train, y_train)
-
     parameters = {
-        "n_estimators": [30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130],  # m
-        "max_features": ["sqrt", "log2", 0.2, 0.4, 0.6, 0.8],  # nfeat
-        "max_samples": [None, 0.2, 0.4, 0.6, 0.8],
-        "ccp_alpha": path.ccp_alphas
+        "n_estimators": [30, 50, 70, 90, 100, 110, 120, 130],  # m
+        "max_features": ["sqrt", "log2", 0.4, 0.8],  # nfeat
     }
 
     model = RandomForestClassifier(random_state=0, criterion='gini', bootstrap=True)
