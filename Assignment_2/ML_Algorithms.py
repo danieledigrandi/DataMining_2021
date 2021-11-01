@@ -60,7 +60,6 @@ def logistic_regression_tuning(X_train, y_train):
 
 
 def single_tree_tuning(X_train, y_train, plot_impurity=False):
-
     # approach partially based on: https://scikit-learn.org/stable/auto_examples/tree/plot_cost_complexity_pruning.html#sphx-glr-auto-examples-tree-plot-cost-complexity-pruning-py
 
     alpha_scores = []
@@ -212,4 +211,3 @@ def random_forest_tuning(X_train, y_train, X_test, y_test):
     y_pred = grid_fit.predict(X_train)
 
     evaluation(y_train, y_pred)
-

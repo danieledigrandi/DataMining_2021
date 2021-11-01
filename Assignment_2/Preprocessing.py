@@ -145,4 +145,3 @@ def get_bigrams(filepath):
                 bigrams[word] += 1
 
     return bigrams
-

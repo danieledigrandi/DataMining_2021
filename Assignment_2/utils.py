@@ -3,11 +3,6 @@ import numpy as np
 from sklearn import metrics
 
 
-def notImplemented():
-
-    print("Not implemented yet")
-
-
 def read_labels(path):
 
     y_train = {}
@@ -109,7 +104,6 @@ def evaluation(y_test, y_pred):
     print("Accuracy:", metrics.accuracy_score(y_test, y_pred)),
     print("All information of each label:"),
     print(metrics.classification_report(y_test, y_pred)),
-
     print("Confusion Matrix: \n"),
     print(metrics.confusion_matrix(y_test, y_pred))
 
@@ -149,5 +143,3 @@ def get_best_params(mode):
         nfeat_bigrams = "sqrt"
 
         return m_unigrams, m_bigrams, nfeat_unigrams, nfeat_bigrams
-
-
