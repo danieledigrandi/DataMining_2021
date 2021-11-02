@@ -181,7 +181,7 @@ def main():
         # QUESTION 1
         print("\nQUESTION 1")
         statistic_test(y_nb_unigrams_pred, y_logistic_unigrams_pred, y_test, "MNB-unigrams", "LR-unigrams")
-        statistic_test(y_nb_bigrams_pred, y_logistic_bigrams_pred, y_test, "ST-bigrams", "LR-bigrams")
+        statistic_test(y_nb_bigrams_pred, y_logistic_bigrams_pred, y_test, "MNB-bigrams", "LR-bigrams")
 
         # QUESTION 2
         print("\nQUESTION 2")
