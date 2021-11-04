@@ -20,11 +20,11 @@ def logistic_regression_tuning(X_train, y_train):
 
     for C in C_range:
         print('Testing C:', C, "(lambda:", str(1/C) + ")")
-        model = LogisticRegression(random_state=0, multi_class='multinomial', penalty='l1', solver='saga', C=C)
+        model = LogisticRegression(random_state=0, penalty='l1', solver='saga', C=C)
         scores = cross_val_score(model, X_train, y_train, cv=10, scoring='accuracy')
         lambda_scores.append(scores.mean())
 
-        model = LogisticRegression(random_state=0, multi_class='multinomial', penalty='l1', solver='saga', C=C).fit(X_train, y_train)
+        model = LogisticRegression(random_state=0, penalty='l1', solver='saga', C=C).fit(X_train, y_train)
 
         y = list(model.coef_)
         zeros = 0
@@ -85,7 +85,7 @@ def single_tree_tuning(X_train, y_train, plot_impurity=False):
         ax.plot(ccp_alphas[:-1], impurities[:-1], drawstyle="steps-post")
         ax.set_xlabel("Effective alpha")
         ax.set_ylabel("Total impurity of leaves")
-        ax.set_title("Total Impurity vs effective alpha for training set (unigrams, ST)")
+        ax.set_title("Total Impurity vs effective alpha for training set (bigrams, ST)")
         plt.show()
 
     for alpha in ccp_alphas:

@@ -120,7 +120,7 @@ def main():
     alpha_st_unigrams, alpha_st_bigrams = get_best_params('ST')
     c_unigrams, c_bigrams = get_best_params('LR')
     m_unigrams, m_bigrams, nfeat_unigrams, nfeat_bigrams = get_best_params('RF')
-
+    
 
     # unigrams
     single_tree_u = DecisionTreeClassifier(random_state=0, criterion='gini', splitter='best', ccp_alpha=alpha_st_unigrams)
@@ -129,7 +129,7 @@ def main():
     print("\nUNIGRAMS - ST")
     evaluation(y_test, y_st_unigrams_pred)
 
-    logistic_u = LogisticRegression(random_state=0, multi_class='multinomial', penalty='l1', solver='saga', C=c_unigrams)
+    logistic_u = LogisticRegression(random_state=0, penalty='l1', solver='saga', C=c_unigrams)
     logistic_u.fit(unigrams_x_train, y_train)
     y_logistic_unigrams_pred = logistic_u.predict(unigrams_x_test)
     print("\nUNIGRAMS - LR")
@@ -155,7 +155,7 @@ def main():
     print("\nBIGRAMS - ST")
     evaluation(y_test, y_st_bigrams_pred)
 
-    logistic_b = LogisticRegression(random_state=0, multi_class='multinomial', penalty='l1', solver='saga', C=c_bigrams)
+    logistic_b = LogisticRegression(random_state=0, penalty='l1', solver='saga', C=c_bigrams)
     logistic_b.fit(bigrams_x_train, y_train)
     y_logistic_bigrams_pred = logistic_b.predict(bigrams_x_test)
     print("\nBIGRAMS - LR")
@@ -174,7 +174,7 @@ def main():
     evaluation(y_test, y_nb_bigrams_pred)
 
     # statistical tests
-    test = False
+    test = True
 
     if test:
 
